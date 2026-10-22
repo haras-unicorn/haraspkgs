@@ -1,0 +1,3 @@
+# Contributor Covenant
+
+Be respectful.
