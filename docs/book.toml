@@ -1,0 +1,11 @@
+[book]
+title = "haraspkgs"
+description = "Common Nix library and packages for haras-unicorn repositories."
+language = "en"
+src = "."
+
+[build]
+build-dir = "book"
+
+[output.html]
+git-repository-url = "https://github.com/haras-unicorn/haraspkgs"
