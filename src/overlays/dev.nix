@@ -23,7 +23,7 @@
                     };
 
                     config = lib.mkOption {
-                      type = lib.types.attrsOf lib.types.raw;
+                      type = selfLib.lib.recursiveAttrsType;
                       default = { };
                       description = "Nixpkgs configuration used to recreate the shell package set.";
                     };

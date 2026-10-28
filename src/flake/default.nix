@@ -12,12 +12,24 @@ let
     )
   );
 
+  mergeRecursiveAttrs =
+    lhs: rhs:
+    if builtins.isAttrs lhs && builtins.isAttrs rhs then
+      lhs
+      // builtins.mapAttrs (
+        name: value: if lhs ? ${name} then mergeRecursiveAttrs lhs.${name} value else value
+      ) rhs
+    else if builtins.isList lhs && builtins.isList rhs then
+      lhs ++ rhs
+    else
+      rhs;
+
   recursiveAttrsType = lib.types.mkOptionType {
     name = "recursiveAttrs";
-    description = "nested attribute set";
+    description = "nested attribute set with recursive attribute set merging and list concatenation";
     descriptionClass = "noun";
     check = value: lib.isAttrs value;
-    merge = loc: defs: lib.foldl' lib.recursiveUpdate { } (builtins.map (def: def.value) defs);
+    merge = _loc: defs: lib.foldl' mergeRecursiveAttrs { } (builtins.map (def: def.value) defs);
   };
 
   baseModule =
@@ -112,6 +124,9 @@ let
           };
 
           self.lib = {
+            lib = {
+              inherit mergeRecursiveAttrs recursiveAttrsType;
+            };
             overlays = {
               namespace = overlays.namespace;
               overlays = selfLib.overlays.makeOverlayAttrs overlays.namespace overlays.overlays (

@@ -7,10 +7,10 @@ imports the downstream `nixpkgs` input and sets `perSystem._module.args.pkgs`.
 
 <!-- markdownlint-disable MD013 -->
 
-| Option     | Type             | Default | Description                                |
-| ---------- | ---------------- | ------- | ------------------------------------------ |
-| `config`   | attrs            | `{}`    | Extra nixpkgs configuration.               |
-| `overlays` | list of overlays | `[]`    | Extra overlays applied to the package set. |
+| Option     | Type             | Default | Description                                                                    |
+| ---------- | ---------------- | ------- | ------------------------------------------------------------------------------ |
+| `config`   | recursive attrs  | `{}`    | Extra nixpkgs configuration; nested attrsets merge and lists are concatenated. |
+| `overlays` | list of overlays | `[]`    | Extra overlays applied to the package set.                                     |
 
 <!-- markdownlint-enable MD013 -->
 
