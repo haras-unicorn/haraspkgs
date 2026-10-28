@@ -82,7 +82,7 @@
                         _file = ./machines.nix;
                         key = ./machines.nix;
                         imports = [ nixosConfiguration ] ++ builtins.attrValues selfNixosModules;
-                        home-manager.sharedModules = selfHomeModules;
+                        home-manager.sharedModules = builtins.attrValues selfHomeModules;
                       })
                       (
                         builtins.mapAttrs (_: { value, ... }: value) (

@@ -2,43 +2,47 @@
 
 {
   self.lib.machines = {
-    nixModule = {
-      nix.settings = {
-        experimental-features = [
-          "nix-command"
-          "flakes"
+    nixModule =
+      { lib, pkgs, ... }:
+      {
+        nix.package = lib.mkDefault pkgs.nix;
+
+        nix.settings = {
+          experimental-features = [
+            "nix-command"
+            "flakes"
+            # NOTE: needed for uid-range
+            "auto-allocate-uids"
+            # NOTE: needed for uid-range
+            "cgroups"
+          ];
+
+          system-features = [
+            # NOTE: defaults
+            "benchmark"
+            "big-parallel"
+            "kvm"
+            "nixos-test"
+            # NOTE: needed for nixos container tests
+            "uid-range"
+          ];
+
           # NOTE: needed for uid-range
-          "auto-allocate-uids"
-          # NOTE: needed for uid-range
-          "cgroups"
-        ];
+          auto-allocate-uids = true;
 
-        system-features = [
-          # NOTE: defaults
-          "benchmark"
-          "big-parallel"
-          "kvm"
-          "nixos-test"
-          # NOTE: needed for nixos container tests
-          "uid-range"
-        ];
+          # NOTE: default is [ "*" ]
+          allowed-users = [
+            "root"
+            "@wheel"
+          ];
 
-        # NOTE: needed for uid-range
-        auto-allocate-uids = true;
-
-        # NOTE: default is [ "*" ]
-        allowed-users = [
-          "root"
-          "@wheel"
-        ];
-
-        # NOTE: default is [ ]
-        trusted-users = [
-          "root"
-          "@wheel"
-        ];
+          # NOTE: default is [ ]
+          trusted-users = [
+            "root"
+            "@wheel"
+          ];
+        };
       };
-    };
 
     makeNixosConfigurationAttrs =
       {
@@ -96,7 +100,7 @@
       builtins.mapAttrs (
         name: module:
         home-manager.lib.homeManagerConfiguration {
-          inherit specialArgs;
+          extraSpecialArgs = specialArgs;
 
           # NOTE: a minimal stub that Home Manager needs
           # `nixpkgs.system` is the canonical way to set the system
@@ -107,6 +111,7 @@
             config = { };
             overlays = [ ];
             stdenv.hostPlatform.system = "x86_64-linux"; # NOTE: home-manager pkgs stub
+            nix = nixpkgs.legacyPackages.x86_64-linux.nix; # NOTE: home-manager pkgs stub
           };
 
           modules = [

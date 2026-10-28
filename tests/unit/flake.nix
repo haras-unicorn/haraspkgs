@@ -172,6 +172,11 @@ let
             nixpkgs.system = system;
             networking.hostName = "machine";
             system.stateVersion = "26.05";
+
+            home-manager.users.test = {
+              home.username = "test";
+              home.homeDirectory = "/home/test";
+            };
           };
       });
 
@@ -180,7 +185,17 @@ let
         value =
           { ... }:
           {
+            home.username = "test";
+            home.homeDirectory = "/home/test";
             home.stateVersion = "26.05";
+          };
+      };
+
+      self.homeModules.shared = {
+        value =
+          { ... }:
+          {
+            home.sessionVariables.HARASPKGS_SHARED = "shared";
           };
       };
 
@@ -425,6 +440,33 @@ in
         test-nixos-configuration = {
           expr = outputs.nixosConfigurations.${system}.config.networking.hostName;
           expected = "machine";
+        };
+
+        test-nixos-shared-home-modules-is-list = {
+          expr = builtins.isList outputs.nixosConfigurations.${system}.config.home-manager.sharedModules;
+          expected = true;
+        };
+
+        test-nixos-shared-home-module-applied = {
+          expr =
+            outputs.nixosConfigurations.${system}.config.home-manager.users.test.home.sessionVariables.HARASPKGS_SHARED;
+          expected = "shared";
+        };
+
+        test-home-shared-module-applied = {
+          expr = outputs.homeConfigurations.home.config.home.sessionVariables.HARASPKGS_SHARED;
+          expected = "shared";
+        };
+
+        test-home-nix-module-applied = {
+          expr = {
+            hasFlakes = builtins.elem "flakes" outputs.homeConfigurations.home.config.nix.settings.experimental-features;
+            hasPackage = outputs.homeConfigurations.home.config.nix.package != null;
+          };
+          expected = {
+            hasFlakes = true;
+            hasPackage = true;
+          };
         };
       }
       // lib.optionalAttrs pkgs.stdenv.isLinux {
