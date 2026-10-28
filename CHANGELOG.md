@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/haras-unicorn/haraspkgs/compare/v1.1.1...v1.1.2) (2026-10-28)
+
+
+### Bug Fixes
+
+* recursive attrs on nixpkgs config and list merging ([#8](https://github.com/haras-unicorn/haraspkgs/issues/8)) ([031ba72](https://github.com/haras-unicorn/haraspkgs/commit/031ba720a076df45bf9a13f966dd5f4ca771d635))
+
 ## [1.1.1](https://github.com/haras-unicorn/haraspkgs/compare/v1.1.0...v1.1.1) (2026-10-28)
 
 
