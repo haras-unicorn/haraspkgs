@@ -82,8 +82,10 @@ checkout and exposed through a read-only overlay lower layer, so they do not
 appear as untracked files while the command runs. The project root is the
 writable overlay upper layer, so normal edits persist. Use `files` to provide
 files, to make a subpath read-only, or to make a `~/` path writable. Use
-`runtimeInputs` for extra tools, `stdin` for a file used as standard input, and
-`bwrapArgs` for extra static `bwrap` arguments.
+`network = true` when the wrapped command needs the host network; otherwise the
+wrapper uses the local profile, which unshares all namespaces and omits network
+configuration. Use `runtimeInputs` for extra tools, `stdin` for a file used as
+standard input, and `bwrapArgs` for extra static `bwrap` arguments.
 
 ```nix
 {
@@ -94,11 +96,15 @@ files, to make a subpath read-only, or to make a `~/` path writable. Use
 }
 ```
 
-The default arguments bind `/nix`, `/etc`, and the current home directory
-read-only, bind `/run` when it exists, provide `/proc`, `/dev`, and a temporary
-`/tmp`, mount the project root read-write (directly or as an overlay upper
-layer), and change to the caller's current directory. The wrapper appends `"$@"`
-after its fixed `arguments`.
+The base arguments come from `self.lib.bwrap.local` or `self.lib.bwrap.network`.
+The local profile unshares all namespaces, binds the store and system paths
+read-only (including `/etc/passwd` and `/etc/group`), and provides `/proc`,
+`/dev`, and a temporary `/tmp`. The network profile adds `--share-net`, the
+network configuration files, and `/etc/ssl`. On top of either profile, the
+wrapper binds `/nix`, the current home directory, and `/run` read-only, mounts
+the project root read-write (directly or as an overlay upper layer), and changes
+to the caller's current directory. The wrapper appends `"$@"` after its fixed
+`arguments`.
 
 The overlay is exported as `flake.overlays.shell`, but it is not part of the
 flake's self package overlays. The helper is injected only into the `pkgs` used

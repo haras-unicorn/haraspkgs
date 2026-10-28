@@ -77,6 +77,10 @@ Common Nix library and packages I use across my repositories.
   wrapper files win. In `NIX_BUILD_TOP` and on non-Linux the wrapper writes the
   files into the checkout, runs the command directly, and still cleans up, so
   wrapper tests can stay `flake = true`.
+- **Shared bwrap profiles live in `src/lib/bwrap.nix`.** Use
+  `self.lib.bwrap.local` for no-network sandboxes and `self.lib.bwrap.network`
+  when the wrapped command needs the host network. `makeBubblewrapWrapper` takes
+  `network = true` to select the network profile.
 - **Parametrized lib entries are functions.** `self.lib.containers` and
   `self.lib.benchmarks` map each declaration to `args: ...`, forwarding `args`
   to the declaration's `value`. Keep `args` out of the declarative entry so

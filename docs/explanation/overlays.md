@@ -44,10 +44,14 @@ Not every overlay belongs in the package set used to evaluate the flake. The
 that do not need it.
 
 `makeBubblewrapWrapper` runs a package through `bwrap` with a default sandbox
-for a Nix machine: the store, system configuration, and home configuration are
-available read-only, while the project root is writable so development commands
-can update the checkout. Callers can add bind overrides for specific paths. This
-is deliberately a shell concern, not a package-builder concern.
+for a Nix machine. The base comes from `self.lib.bwrap`: the local profile
+unshares all namespaces and omits network configuration, while the network
+profile keeps the host network and provides the related `/etc` files. The store,
+system paths, and home configuration are available read-only, while the project
+root is writable so development commands can update the checkout. Callers choose
+the network profile with `network = true` and can add bind overrides for
+specific paths. This is deliberately a shell concern, not a package-builder
+concern.
 
 `src/overlays/dev.nix` therefore extends the shell `pkgs` with the shell overlay
 before it calls `evalModules` and `mkShell`. The overlay is still registered and
