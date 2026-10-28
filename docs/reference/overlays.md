@@ -38,6 +38,9 @@ configured namespace after composition, so the package becomes
 
 <!-- markdownlint-enable MD013 -->
 
+The base module defines these options, so `name` and `deps` keep their defaults
+during the `makeFlake` bootstrap pass.
+
 The default namespace is overridden to `harasPackages` by this flake.
 
 ## Dependencies
@@ -151,9 +154,9 @@ provided `~/` path is bound read-only, with a temporary mount point created when
 the destination does not exist. The Helix wrapper uses `~/.cache/helix` so `hx`
 can write `helix.log` without making the rest of `$HOME` writable.
 
-The overlay is exported through `flake.overlays.shell`; `src/overlays/dev.nix`
-extends the evaluated shell `pkgs` with it, but the flake's own package set does
-not include it.
+The overlay is exported through `flake.overlays.shell`. Because it is
+`self = true`, it is also part of the flake's own package set.
+`src/overlays/dev.nix` extends the evaluated shell `pkgs` with it as well.
 
 ## Dev shell helpers
 

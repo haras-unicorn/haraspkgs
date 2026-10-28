@@ -58,12 +58,12 @@ CLI and installs the scripts in a store directory. Its wrapped `git` sets
 ## Relationship to overlays
 
 Dev shells start from the flake's package set, including the overlays declared
-through `self.nixpkgs.overlays`. The shell-only overlay is added to the list,
+through `self.nixpkgs.overlays`. The shell overlay is also added to the list,
 and the shell module recreates `pkgs` from the resulting overlay list. That adds
-`harasPackages.makeBubblewrapWrapper` for in-shell `bwrap` wrappers without
-putting the helper into the flake's own package set. The global-bwrap overlay is
-appended last, so it can inject `bwrap.files` into every wrapper. See
-[shell-only overlays](overlays.md#shell-only-overlays).
+`harasPackages.makeBubblewrapWrapper` for in-shell `bwrap` wrappers; the same
+overlay is part of the flake's own package set for now. The global-bwrap overlay
+is appended last, so it can inject `bwrap.files` into every wrapper. See
+[the shell overlay](overlays.md#the-shell-overlay).
 
 ## Testing
 
@@ -80,7 +80,7 @@ test provides dev shell `modules` and a list of `commands`. The modules are
 evaluated into a shell with the same default dev modules and overlay as
 `self.devShells`. The test copies `self.outPath`, runs the shell's `shellHook`,
 and then runs the commands in a derivation whose build phase replaces the
-shell's. `self = true` tests appear in `self.lib.devTests.<system>`;
+shell's. `self = true` tests appear in `self.lib.<system>.devTests`;
 `flake = true` tests become `perSystem.checks.dev-test-<name>`. Wrappers fall
 back to direct execution with cleanup when they run inside a Nix build sandbox
 or on non-Linux systems, so tests that only exercise wrapper behavior can stay

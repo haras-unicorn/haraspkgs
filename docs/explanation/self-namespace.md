@@ -7,8 +7,8 @@ surface.
 ## One namespace
 
 Options are spread across feature modules: `self.lib` in `src/lib/default.nix`,
-`self.overlays` in `src/flake/overlays.nix`, `self.machines` in
-`src/flake/machines.nix`, and the dev options in `src/flake/dev.nix`.
+`self.overlays` in the base module in `src/flake/default.nix`, `self.machines`
+in `src/flake/machines.nix`, and the dev options in `src/flake/dev.nix`.
 `makeFlake` imports the registered modules, so downstream configuration is
 written under a single `self` attribute set.
 
@@ -27,6 +27,25 @@ exporting one.
 
 The `self.lib` mirror makes downstream configuration reachable through a single
 `selfLib` handle. Library helpers and per-system values live there too.
+
+## Provider and downstream scopes
+
+Exported flake modules have two argument scopes. The outer module is evaluated
+by haraspkgs, so its arguments (`selfLib`, `self`, `inputs`, ...) are
+provider-side. The `value` function it exports is evaluated by the downstream
+flake, so its arguments (`lib`, `config`, `self`, `inputs`, `specialArgs`, ...)
+are downstream-side.
+
+Use the captured provider `selfLib` for provider values and `config.self` for
+downstream values. Do not read downstream flake outputs (`self.overlays.*`,
+`self.devModules.*`, `self.lib.*`, ...) from the inner module; the `makeFlake`
+bootstrap evaluates those modules before the final flake outputs exist.
+`self.outPath` is the exception.
+
+Exported flake modules read provider overlays from `selfLib.overlays.overlays`
+and the namespace from `selfLib.overlays.namespace`. The base module defines the
+overlay options and composes those provider-facing values during bootstrap, so
+the submodule defaults for `name` and `deps` are available there.
 
 ## Not every value is public
 

@@ -35,8 +35,9 @@ with `lib.evalModules`. The evaluation receives:
 - the shell module itself.
 
 Before evaluation, the per-system `pkgs` is extended with the shell overlay, so
-`pkgs.harasPackages.makeBubblewrapWrapper` is available to dev modules without
-becoming part of the flake's own package set. See [Overlays](overlays.md).
+`pkgs.harasPackages.makeBubblewrapWrapper` is available to dev modules. The same
+overlay is part of the flake's own package set for now. See
+[Overlays](overlays.md).
 
 The evaluator takes the shell fields from the resulting config (`name`,
 `packages`, `buildInputs`, `nativeBuildInputs`, `inputsFrom`, `env`, and

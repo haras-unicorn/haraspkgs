@@ -157,6 +157,8 @@
       in
       {
         git-mcp-server = gitMcpServer;
+      }
+      // final.lib.optionalAttrs final.stdenv.isLinux {
         git-mcp-server-bwrap = gitMcpServerBwrap;
         git-mcp-server-ssh-agent = gitMcpServerSshAgent;
       };

@@ -6,6 +6,20 @@
 let
   selfLib = config.self.lib;
 
+  haraspkgsModules = builtins.attrValues (
+    builtins.mapAttrs (_: { value, ... }: value) (
+      selfLib.lib.filterAttrsRecursiveByKey "flake" false config.self.flakeModules
+    )
+  );
+
+  recursiveAttrsType = lib.types.mkOptionType {
+    name = "recursiveAttrs";
+    description = "nested attribute set";
+    descriptionClass = "noun";
+    check = value: lib.isAttrs value;
+    merge = loc: defs: lib.foldl' lib.recursiveUpdate { } (builtins.map (def: def.value) defs);
+  };
+
   baseModule =
     {
       lib,
@@ -16,13 +30,7 @@ let
     let
       selfOptions = {
         lib = lib.mkOption {
-          type = lib.types.mkOptionType {
-            name = "recursiveAttrs";
-            description = "nested attribute set";
-            descriptionClass = "noun";
-            check = value: lib.isAttrs value;
-            merge = loc: defs: lib.foldl' lib.recursiveUpdate { } (builtins.map (def: def.value) defs);
-          };
+          type = recursiveAttrsType;
           default = { };
           description = "Library values to use in this flake or export to the flake library.";
         };
@@ -33,6 +41,43 @@ let
             value = { };
           };
           description = "Flake modules to use in this flake or export to the flake.";
+        };
+
+        overlays = {
+          namespace = lib.mkOption {
+            type = lib.types.str;
+            default = "selfPackages";
+            description = "Namespace under which to put overlays.";
+          };
+
+          overlays = lib.mkOption {
+            default = { };
+            description = "Overlays to namespace and make packages and apps out of.";
+            type = lib.types.attrsOf (
+              lib.types.submodule (
+                { name, ... }:
+                {
+                  imports = [
+                    (selfLib.lib.selfSubmodule (lib.types.functionTo (lib.types.functionTo lib.types.attrs)))
+                  ];
+
+                  options = {
+                    name = lib.mkOption {
+                      type = lib.types.str;
+                      default = name;
+                      description = "Overlay name.";
+                    };
+
+                    deps = lib.mkOption {
+                      type = lib.types.listOf lib.types.str;
+                      default = [ ];
+                      description = "Overlay dependencies, as exact names or slash-delimited regexes.";
+                    };
+                  };
+                }
+              )
+            );
+          };
         };
       };
     in
@@ -46,61 +91,88 @@ let
             description = "Freeform self.";
             default = { };
             type = lib.types.submodule {
-              freeformType = lib.types.attrs;
+              freeformType = recursiveAttrsType;
               options = selfOptions;
             };
           }
         else
           selfOptions;
 
-      config = {
-        _module.args.selfLib = selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
-          selfLib.lib.filterAttrsRecursiveByKey "self" true config.self.lib
-        );
+      config =
+        let
+          overlays = config.self.overlays;
+        in
+        {
+          self.assertions = [ (selfLib.overlays.makeUndefinedDepsAssertion overlays.overlays) ];
 
-        perSystem = { system, ... }: {
-          _module.args.selfLib =
-            lib.recursiveUpdate
-              (selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
-                selfLib.lib.filterAttrsRecursiveByKey "self" true config.self.lib
-              ))
-              (
-                if config.self.lib ? ${system} then
-                  selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
-                    selfLib.lib.filterAttrsRecursiveByKey "self" true config.self.lib.${system}
-                  )
-                else
-                  { }
+          self.flakeModules.base = {
+            self = false;
+            flake = true;
+            value = baseModule;
+          };
+
+          self.lib = {
+            overlays = {
+              namespace = overlays.namespace;
+              overlays = selfLib.overlays.makeOverlayAttrs overlays.namespace overlays.overlays (
+                selfLib.lib.filterAttrsByKey "self" true
               );
-        };
+              nixpkgs = config.self.lib.overlays.overlays.default;
+            };
+          }
+          // lib.genAttrs config.systems (system: {
+            overlays = selfLib.overlays.makeOverlayResult config.self.lib.pkgs.${system} overlays.namespace [
+              config.self.lib.overlays.overlays.default
+            ];
+          });
 
-        self.flakeModules.base = {
-          self = false;
-          flake = true;
-          value = baseModule;
-        };
-
-        flake.lib =
-          (selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
-            selfLib.lib.filterAttrsRecursiveByKey "flake" false config.self.lib
-          ))
-          // {
+          flake.lib = {
             selfModules = builtins.map ({ value, ... }: value) (
               builtins.attrValues (selfLib.lib.filterAttrsRecursiveByKey "self" true config.self.flakeModules)
             );
-          };
+          }
+          // (selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
+            selfLib.lib.filterAttrsRecursiveByKey "flake" false config.self.lib
+          ));
 
-        flake.flakeModules =
-          let
-            exportedModules = builtins.mapAttrs (_: { value, ... }: value) (
-              selfLib.lib.filterAttrsRecursiveByKey "flake" false config.self.flakeModules
-            );
-          in
-          exportedModules
-          // {
-            default.imports = builtins.attrValues exportedModules;
+          flake.flakeModules =
+            let
+              exportedModules = builtins.mapAttrs (_: { value, ... }: value) (
+                selfLib.lib.filterAttrsRecursiveByKey "flake" false config.self.flakeModules
+              );
+            in
+            exportedModules
+            // {
+              default.imports = builtins.attrValues exportedModules;
+            };
+
+          flake.overlays = selfLib.overlays.makeOverlayAttrs overlays.namespace overlays.overlays (
+            selfLib.lib.filterAttrsByKey "flake" false
+          );
+
+          _module.args.selfLib = selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
+            selfLib.lib.filterAttrsRecursiveByKey "self" true config.self.lib
+          );
+
+          perSystem = { system, pkgs, ... }: {
+            _module.args.selfLib =
+              lib.recursiveUpdate
+                (selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
+                  selfLib.lib.filterAttrsRecursiveByKey "self" true config.self.lib
+                ))
+                (
+                  selfLib.lib.filterAttrsRecursiveByKeys [ "self" "flake" ] (
+                    selfLib.lib.filterAttrsRecursiveByKey "self" true (config.self.lib.${system} or { })
+                  )
+                );
+
+            inherit
+              (selfLib.overlays.makeOverlayResult pkgs overlays.namespace [ config.flake.overlays.default ])
+              packages
+              apps
+              ;
           };
-      };
+        };
     };
 
   makeFlake =
@@ -132,8 +204,6 @@ let
         lib.flatten (if builtins.isList modules then modules else [ modules ])
       );
 
-      haraspkgsModules = builtins.attrValues (removeAttrs config.flake.flakeModules [ "default" ]);
-
       selfModules =
         (flake-parts.lib.mkFlake
           (lib.recursiveUpdate args {
@@ -153,7 +223,9 @@ let
       };
 in
 {
-  imports = [ baseModule ];
+  imports = [
+    baseModule
+  ];
 
   self.lib = {
     makeFlake = selfLib.lib.selfFunctor {

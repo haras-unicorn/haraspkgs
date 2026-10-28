@@ -35,7 +35,7 @@
           }
         ) { };
       in
-      {
+      final.lib.optionalAttrs final.stdenv.isLinux {
         mcp-server-filesystem-bwrap = package;
       };
   };

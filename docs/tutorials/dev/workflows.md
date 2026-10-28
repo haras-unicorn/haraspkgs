@@ -20,7 +20,7 @@ Put the declaration in the shell or a dev module:
         "macos-latest"
       ];
       installable = null;
-      steps = [ { run = "nix flake check --all-systems --show-trace"; } ];
+      steps = [ { run = "nix flake check --show-trace"; } ];
     };
   };
 }

@@ -3,6 +3,9 @@
 # IMPORTANT: this file is an infinite recursion landmine
 # please do not edit unless you are 100% sure of what you are doing
 
+# NOTE: do not request selfLib here as selfLib construction requires
+# functions from this file
+
 let
   isActuallyAttrs =
     attrs:

@@ -1,16 +1,18 @@
 # Why overlays are a graph
 
 `self.overlays` looks larger than a list of overlay functions because a
-repository usually has packages that build on each other. The module represents
-that as a named dependency graph and then composes it into the package set.
+repository usually has packages that build on each other. The base module
+represents that as a named dependency graph and then composes it into the
+package set.
 
 ## Names and dependencies
 
 Each overlay has a name under `self.overlays.overlays` and an optional `deps`
-list. Dependencies are exact names or `/regex/` patterns. Selected overlays are
-expanded transitively and topologically sorted before composition. A missing
-dependency or a cycle fails evaluation instead of producing a package set with a
-silently missing attribute.
+list. The base module defines the overlay options, so the submodule defaults are
+available even during the bootstrap pass. Dependencies are exact names or
+`/regex/` patterns. Selected overlays are expanded transitively and
+topologically sorted before composition. A missing dependency or a cycle fails
+evaluation instead of producing a package set with a silently missing attribute.
 
 ## The namespace
 
@@ -30,18 +32,17 @@ dependency is not exported itself, because an overlay cannot run without them.
 
 ## One package set
 
-The module puts the composed namespace overlay into `self.nixpkgs.overlays`.
-That keeps `perSystem` modules, dev shells, and the exported packages on the
-same package set. The cost is that consumers use `pkgs.harasPackages.foo`; the
-graph is not a package manager and does not resolve versions.
+The base module exposes the composed namespace overlay as
+`self.lib.overlays.nixpkgs`. That keeps `perSystem` modules, dev shells, and the
+exported packages on the same package set. The cost is that consumers use
+`pkgs.harasPackages.foo`; the graph is not a package manager and does not
+resolve versions.
 
-## Shell-only overlays
+## The shell overlay
 
-Not every overlay belongs in the package set used to evaluate the flake. The
-`shell` overlay is an example: it exists so every evaluated dev shell can use
-`pkgs.harasPackages.makeBubblewrapWrapper`, but adding that helper to
-`self.nixpkgs.overlays` would make it available to package and NixOS modules
-that do not need it.
+The `shell` overlay provides `pkgs.harasPackages.makeBubblewrapWrapper`. It is a
+normal overlay with `flake = true` and the default `self = true` for now, so it
+appears in `self.lib.overlays.overlays` and the flake's own package set.
 
 `makeBubblewrapWrapper` runs a package through `bwrap` with a default sandbox
 for a Nix machine. The base comes from `self.lib.bwrap`: the local profile
@@ -50,14 +51,11 @@ profile keeps the host network and provides the related `/etc` files. The store,
 system paths, and home configuration are available read-only, while the project
 root is writable so development commands can update the checkout. Callers choose
 the network profile with `network = true` and can add bind overrides for
-specific paths. This is deliberately a shell concern, not a package-builder
-concern.
+specific paths.
 
-`src/overlays/dev.nix` therefore extends the shell `pkgs` with the shell overlay
-before it calls `evalModules` and `mkShell`. The overlay is still registered and
-composed like any other overlay, so its dependencies and export flags remain
-visible. `self = false` keeps it out of the flake's own `pkgs`; the dev-shell
-evaluator opts into it explicitly.
+`src/overlays/dev.nix` also extends the evaluated shell `pkgs` with the same
+overlay before it calls `evalModules` and `mkShell`, so dev shells keep the
+helper even when they recreate their package set.
 
 ## Related
 

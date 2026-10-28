@@ -3,7 +3,6 @@
 {
   self.overlays.overlays.shell = {
     deps = [ "flake-root" ];
-    self = false;
     flake = true;
     value = final: prev: {
       makeBubblewrapWrapper =

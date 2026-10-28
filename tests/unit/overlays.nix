@@ -191,8 +191,8 @@ in
           expected = true;
         };
 
-        test-not-in-base-pkgs = {
-          expr = !((pkgs.harasPackages or { }) ? makeBubblewrapWrapper);
+        test-in-base-pkgs = {
+          expr = (pkgs.harasPackages or { }) ? makeBubblewrapWrapper;
           expected = true;
         };
       };

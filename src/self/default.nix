@@ -560,7 +560,7 @@
             installable = null;
 
             steps = [
-              { run = "nix flake check --all-systems --show-trace"; }
+              { run = "nix flake check --show-trace"; }
               { run = "nix build --show-trace .#docs"; }
             ];
           };

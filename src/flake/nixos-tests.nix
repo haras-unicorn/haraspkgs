@@ -1,8 +1,4 @@
-{
-  self,
-  selfLib,
-  ...
-}:
+{ selfLib, ... }:
 
 {
   self.flakeModules.nixos-tests = {
@@ -33,32 +29,33 @@
           );
         };
 
-        config = {
-          self.lib.nixosTests =
-            lib.genAttrs (builtins.filter (system: lib.hasSuffix "linux" system) config.systems)
-              (
-                system:
-                builtins.mapAttrs (
-                  _: nixosTest:
-                  (config.self.lib.${system}.pkgs.extend self.overlays.nixos-tests)
-                  .${selfLib.overlays.namespace}.makeNixosTest
-                    (selfLib.lib.filterAttrsByKey "self" true nixosTest)
-                ) config.self.nixosTests
-              );
+        config =
+          let
+            makeNixosTest =
+              pkgs:
+              (pkgs.extend selfLib.overlays.overlays.nixos-tests).${selfLib.overlays.namespace}.makeNixosTest;
+          in
+          {
+            self.lib =
+              lib.genAttrs (builtins.filter (system: lib.hasSuffix "linux" system) config.systems)
+                (system: {
+                  nixosTests = builtins.mapAttrs (
+                    _: nixosTest:
+                    makeNixosTest config.self.lib.pkgs.${system} (selfLib.lib.filterAttrsByKey "self" true nixosTest)
+                  ) config.self.nixosTests;
+                });
 
-          perSystem =
-            { pkgs, ... }:
-            lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
-              checks = lib.mapAttrs' (
-                name: nixosTest:
-                lib.nameValuePair "nixos-test-${name}" (
-                  (pkgs.extend self.overlays.nixos-tests).${selfLib.overlays.namespace}.makeNixosTest (
-                    selfLib.lib.filterAttrsByKey "self" true nixosTest
+            perSystem =
+              { pkgs, ... }:
+              lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+                checks = lib.mapAttrs' (
+                  name: nixosTest:
+                  lib.nameValuePair "nixos-test-${name}" (
+                    makeNixosTest pkgs (selfLib.lib.filterAttrsByKey "self" true nixosTest)
                   )
-                )
-              ) (selfLib.lib.filterAttrsByKey "flake" false config.self.nixosTests);
-            };
-        };
+                ) (selfLib.lib.filterAttrsByKey "flake" false config.self.nixosTests);
+              };
+          };
       };
   };
 }

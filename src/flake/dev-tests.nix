@@ -1,8 +1,12 @@
-{
-  selfLib,
-  ...
-}:
+{ selfLib, config, ... }:
 
+let
+  haraspkgsModules = builtins.attrValues (
+    builtins.mapAttrs (_: { value, ... }: value) (
+      selfLib.lib.filterAttrsRecursiveByKey "flake" false config.self.devModules
+    )
+  );
+in
 {
   self.flakeModules.dev-tests = {
     self = false;
@@ -22,15 +26,14 @@
         };
 
         makeDevTest =
-          system: name: devTest:
-          (config.self.lib.${system}.pkgs.extend self.overlays.dev).${selfLib.overlays.namespace}.makeDevTest
-            {
-              inherit name;
-              inherit (devTest) value;
-              moduleArgs = devModuleArgs;
-              devModules = [ config.self.lib.devModules.default ];
-              source = self.outPath;
-            };
+          pkgs: name: devTest:
+          (pkgs.extend selfLib.overlays.overlays.dev).${selfLib.overlays.namespace}.makeDevTest {
+            inherit name;
+            inherit (devTest) value;
+            moduleArgs = devModuleArgs;
+            devModules = [ config.self.lib.devModules.default ] ++ haraspkgsModules;
+            source = self.outPath;
+          };
       in
       {
         options.self.devTests = lib.mkOption {
@@ -68,18 +71,17 @@
         };
 
         config = {
-          self.lib.devTests = lib.genAttrs config.systems (
-            system:
-            builtins.mapAttrs (name: devTest: makeDevTest system name devTest) (
-              selfLib.lib.filterAttrsByKey "self" true config.self.devTests
-            )
-          );
+          self.lib = lib.genAttrs config.systems (system: {
+            devTests = builtins.mapAttrs (
+              name: devTest: makeDevTest config.self.lib.pkgs.${system} name devTest
+            ) (selfLib.lib.filterAttrsByKey "self" true config.self.devTests);
+          });
 
           perSystem =
-            { system, ... }:
+            { pkgs, ... }:
             {
               checks = lib.mapAttrs' (
-                name: devTest: lib.nameValuePair "dev-test-${name}" (makeDevTest system name devTest)
+                name: devTest: lib.nameValuePair "dev-test-${name}" (makeDevTest pkgs name devTest)
               ) (selfLib.lib.filterAttrsByKey "flake" false config.self.devTests);
             };
         };

@@ -21,7 +21,8 @@ configured namespace.
 
 Write un-namespaced attributes inside the overlay; `haraspkgs` applies the
 namespace after composition. The default namespace is `harasPackages`, so the
-package is `pkgs.harasPackages.my-tool`.
+package is `pkgs.harasPackages.my-tool`. The overlay name defaults to the
+attribute name and `deps` defaults to `[]`.
 
 Set `flake = true` to export the overlay through `flake.overlays` and derive
 `packages` and `apps`. Set `self = false` to keep the overlay out of the
@@ -106,10 +107,10 @@ the project root read-write (directly or as an overlay upper layer), and changes
 to the caller's current directory. The wrapper appends `"$@"` after its fixed
 `arguments`.
 
-The overlay is exported as `flake.overlays.shell`, but it is not part of the
-flake's self package overlays. The helper is injected only into the `pkgs` used
-to evaluate and construct dev shells. In a sandbox or on non-Linux systems the
-wrapper writes `files` into the checkout, runs the command directly, and still
-performs cleanup.
+The overlay is exported as `flake.overlays.shell` and, because it is
+`self = true`, it is also part of the flake's self package overlays. The helper
+is additionally injected into the `pkgs` used to evaluate and construct dev
+shells. In a sandbox or on non-Linux systems the wrapper writes `files` into the
+checkout, runs the command directly, and still performs cleanup.
 
 See the [overlay reference](../reference/overlays.md) for the option shape.
