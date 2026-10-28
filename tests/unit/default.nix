@@ -177,6 +177,64 @@ in
       };
     };
 
+    test-recursive-attrs-type-merges-attrs = {
+      expr =
+        helpers.recursiveAttrsType.merge
+          [ ]
+          [
+            {
+              value = {
+                a = 1;
+                nested.b = 2;
+              };
+            }
+            {
+              value = {
+                c = 3;
+                nested.d = 4;
+              };
+            }
+          ];
+      expected = {
+        a = 1;
+        c = 3;
+        nested = {
+          b = 2;
+          d = 4;
+        };
+      };
+    };
+
+    test-recursive-attrs-type-merges-lists = {
+      expr =
+        helpers.recursiveAttrsType.merge
+          [ ]
+          [
+            {
+              value = {
+                list = [ 1 ];
+                nested.list = [ "a" ];
+              };
+            }
+            {
+              value = {
+                list = [ 2 ];
+                nested.list = [ "b" ];
+              };
+            }
+          ];
+      expected = {
+        list = [
+          1
+          2
+        ];
+        nested.list = [
+          "a"
+          "b"
+        ];
+      };
+    };
+
     test-self-functor = {
       expr =
         let
@@ -212,6 +270,8 @@ in
         "inputs"
         "makeFlake"
         "makeModuleAttrs"
+        "mergeRecursiveAttrs"
+        "recursiveAttrsType"
         "selfFunctor"
         "selfSubmodule"
       ];
