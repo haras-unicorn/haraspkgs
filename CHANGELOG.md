@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/haras-unicorn/haraspkgs/compare/v1.1.0...v1.1.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* home-manager shared modules ([#6](https://github.com/haras-unicorn/haraspkgs/issues/6)) ([3a163a8](https://github.com/haras-unicorn/haraspkgs/commit/3a163a8cddf31ca7ae82442780ab4fe2c6a70670))
+
 ## [1.1.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.0.0...v1.1.0) (2026-10-28)
 
 
