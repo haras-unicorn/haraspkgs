@@ -38,6 +38,9 @@ configured namespace after composition, so the package becomes
 
 <!-- markdownlint-enable MD013 -->
 
+The base module defines these options, so `name` and `deps` keep their defaults
+during the `makeFlake` bootstrap pass.
+
 The default namespace is overridden to `harasPackages` by this flake.
 
 ## Dependencies
@@ -88,6 +91,7 @@ pkgs.harasPackages.makeBubblewrapWrapper {
     };
   };
   runtimeInputs = [ ];
+  network = false;
   bwrapArgs = [ ];
 }
 ```
@@ -103,6 +107,7 @@ pkgs.harasPackages.makeBubblewrapWrapper {
 | `stdin`         | path or null       | `null`              | File redirected to the wrapped command's standard input.                   |
 | `files`         | attrs of submodule | `{}`                | Files staged in an overlay or bound, relative to the project root or `~/`. |
 | `runtimeInputs` | list of package    | `[]`                | Extra commands available to the wrapper.                                   |
+| `network`       | bool               | `false`             | Use the `bwrap.network` profile instead of `bwrap.local`.                  |
 | `bwrapArgs`     | list of string     | `[]`                | Extra static arguments passed to `bwrap`.                                  |
 
 <!-- markdownlint-enable MD013 -->
@@ -118,11 +123,15 @@ are relative to `$HOME`. `source` and `text` are mutually exclusive.
 `mode = "rw"` cannot use either; it only binds the target path to itself. With
 neither set, the target path is bound to itself.
 
-The wrapper uses `bubblewrap` and `writeShellApplication`. Its default `bwrap`
-arguments bind `/nix`, `/etc`, and the current home directory read-only, bind
-`/run` when present, provide `/proc`, `/dev`, and a temporary `/tmp`, bind the
-project root read-write, and change to the caller's current directory. The
-project root is found with `flake-root` at runtime.
+The wrapper uses `bubblewrap` and `writeShellApplication`. Its base arguments
+are `self.lib.bwrap.local` by default, or `self.lib.bwrap.network` when
+`network = true`. The local profile unshares all namespaces and binds the store
+and system paths read-only, including `/etc/passwd` and `/etc/group`, without
+network configuration. The network profile adds `--share-net` plus `/etc/hosts`,
+`/etc/nsswitch.conf`, `/etc/resolv.conf`, and `/etc/ssl`. On top of the profile,
+the wrapper binds `/nix`, the current home directory, and `/run` read-only,
+binds the project root read-write, and changes to the caller's current
+directory. The project root is found with `flake-root` at runtime.
 
 Files with `source` or `text` are symlinked into a temporary staging directory
 under `$XDG_CACHE_HOME/haraspkgs` (default `~/.cache/haraspkgs`) and exposed as
@@ -136,7 +145,8 @@ running the command directly; cleanup still happens. This is what lets dev tests
 exercise wrappers in CI.
 
 The shell overlay merges global `bwrap.files` into every wrapper; explicit
-`files` entries win for the same key. `stdin` and `bwrapArgs` are static.
+`files` entries win for the same key. `stdin`, `network`, and `bwrapArgs` are
+static.
 
 Home entries are bound separately from the repository overlay. A bound `~/` path
 is created with `mkdir -p` if missing and then bound with its configured mode. A
@@ -144,9 +154,9 @@ provided `~/` path is bound read-only, with a temporary mount point created when
 the destination does not exist. The Helix wrapper uses `~/.cache/helix` so `hx`
 can write `helix.log` without making the rest of `$HOME` writable.
 
-The overlay is exported through `flake.overlays.shell`; `src/overlays/dev.nix`
-extends the evaluated shell `pkgs` with it, but the flake's own package set does
-not include it.
+The overlay is exported through `flake.overlays.shell`. Because it is
+`self = true`, it is also part of the flake's own package set.
+`src/overlays/dev.nix` extends the evaluated shell `pkgs` with it as well.
 
 ## Dev shell helpers
 

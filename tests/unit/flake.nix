@@ -195,9 +195,14 @@ let
     ];
   };
 
+  downstreamOutputs = selfLib.lib.makeFlake {
+    inherit inputs;
+    modules = [ fixture ];
+  };
+
   minimalOutputs = selfLib.lib.makeFlake {
     inputs = {
-      inherit (inputs) nixpkgs;
+      inherit (inputs) nixpkgs nix-unit;
     };
     modules = [ ];
   };
@@ -217,7 +222,7 @@ in
         hasLib = outputs ? lib;
         hasFlakeModules = outputs ? flakeModules;
         hasDevShells = outputs ? devShells;
-        hasDevTests = outputs.lib ? devTests;
+        hasDevTests = builtins.all (system: outputs.lib.${system} ? devTests) config.systems;
         hasPackages = outputs ? packages;
         hasChecks = outputs ? checks;
         hasNixosConfigurations = outputs ? nixosConfigurations;
@@ -233,6 +238,30 @@ in
         hasNixosConfigurations = true;
         hasHomeConfigurations = true;
       };
+    };
+
+    test-downstream-only-output-contract = {
+      expr = {
+        hasLib = downstreamOutputs ? lib;
+        hasDevShells = downstreamOutputs ? devShells;
+        hasPackages = downstreamOutputs ? packages;
+        hasChecks = downstreamOutputs ? checks;
+        hasOverlays = downstreamOutputs ? overlays;
+        hasNixosConfigurations = downstreamOutputs ? nixosConfigurations;
+      };
+      expected = {
+        hasLib = true;
+        hasDevShells = true;
+        hasPackages = true;
+        hasChecks = true;
+        hasOverlays = true;
+        hasNixosConfigurations = true;
+      };
+    };
+
+    test-downstream-only-self-modules = {
+      expr = builtins.length downstreamOutputs.lib.selfModules;
+      expected = 1;
     };
 
     test-downstream-inputs-fallback = {
@@ -280,7 +309,6 @@ in
         "machines"
         "nixos-tests"
         "nixpkgs"
-        "overlays"
         "systems"
         "unit-tests"
       ];
@@ -290,7 +318,7 @@ in
     test-flake-modules-default-group = {
       expr =
         builtins.isList outputs.flakeModules.default.imports
-        && builtins.length outputs.flakeModules.default.imports == 12;
+        && builtins.length outputs.flakeModules.default.imports == 11;
       expected = true;
     };
 
@@ -369,13 +397,18 @@ in
     { system, pkgs, ... }:
     {
       self.unitTests.flake-system = {
-        test-overlay-package = {
-          expr = outputs.packages.${system} ? hello;
+        test-downstream-only-overlay-package = {
+          expr = downstreamOutputs.packages.${system} ? hello;
           expected = true;
         };
 
-        test-overlay-app = {
-          expr = outputs.apps.${system} ? hello;
+        test-downstream-only-overlay-app = {
+          expr = downstreamOutputs.apps.${system} ? hello;
+          expected = true;
+        };
+
+        test-downstream-only-dev-shell = {
+          expr = downstreamOutputs.lib.${system}.devShells ? example;
           expected = true;
         };
 
@@ -423,7 +456,7 @@ in
 
       self.unitTests.devTests = {
         test-dev-test-lib = {
-          expr = outputs.lib.devTests.${system} ? example;
+          expr = outputs.lib.${system}.devTests ? example;
           expected = true;
         };
 
@@ -433,7 +466,7 @@ in
         };
 
         test-dev-test-name = {
-          expr = outputs.lib.devTests.${system}.example.name;
+          expr = outputs.lib.${system}.devTests.example.name;
           expected = "dev-test-example";
         };
       };

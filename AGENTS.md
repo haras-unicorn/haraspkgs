@@ -15,10 +15,10 @@ Common Nix library and packages I use across my repositories.
 - **Do not monkey-patch `flake.nix` to filter directories out of
   `import-tree`.** Import everything under `src/`; import `tests/` too when it
   exists. Small duplication is acceptable if it keeps the module graph obvious.
-- **Keep modules self-contained.** `src/flake/overlays.nix` owns
-  `self.overlays`, `src/flake/machines.nix` owns `self.machines`, and so on.
-  Helpers can live in the module that needs them; do not centralize unrelated
-  helpers.
+- **Keep modules self-contained.** The base module in `src/flake/default.nix`
+  owns the `self` options, including `self.overlays`; `src/flake/machines.nix`
+  owns `self.machines`, and so on. Helpers can live in the module that needs
+  them; do not centralize unrelated helpers.
 - **Repository configuration belongs in the dev shell.** Generate `.gitignore`,
   `.gitattributes`, `.github/workflows/*.yaml`, `LICENSE.md`, and
   `CODE_OF_CONDUCT.md` through dev modules (`file`, `git`, `workflows`,
@@ -50,6 +50,15 @@ Common Nix library and packages I use across my repositories.
 - **`makeFlake` is the entrypoint.** The top-level `flake.nix` bootstraps `self`
   and calls `self.lib.makeFlake` from `src/flake/default.nix`. Downstream flakes
   call `haraspkgs.lib.makeFlake`.
+- **Exported flake modules have two scopes.** In a
+  `self.flakeModules.<name>.value` definition, the outer module arguments
+  (`selfLib`, `self`, `inputs`, ...) come from the haraspkgs evaluation, while
+  the inner `value` arguments (`lib`, `config`, `self`, `inputs`, `specialArgs`,
+  ...) come from the downstream evaluation. Use `selfLib.*` for provider values
+  and `config.self.*` for downstream values. Never read downstream flake outputs
+  (`self.overlays.*`, `self.devModules.*`, `self.lib.*`, and so on) from the
+  inner module; `self.outPath` is the exception. This keeps the `makeFlake`
+  bootstrap independent from the final flake outputs.
 - **`self` and `flake` are separate flags.** Values use
   `selfLib.lib.selfSubmodule` (or `selfFunctor`) and choose whether they belong
   in the `self` mirror (`self = true`) and the flake outputs (`flake = true`).
@@ -63,10 +72,10 @@ Common Nix library and packages I use across my repositories.
 - **Package overlays define packages, not builders.** `src/packages/*` should
   expose derivations (for example `llama-cpp-convert`). Do not expose
   `mkPackage`-style helpers from these overlays.
-- **Shell-only overlays live in `src/overlays/shell.nix`.** They use
-  `self = false; flake = true;` and are injected into the evaluated shell `pkgs`
-  by `src/overlays/dev.nix`, not into the flake's own package set. Use them for
-  in-shell helpers such as the `bwrap`-based `makeBubblewrapWrapper`.
+- **The shell overlay lives in `src/overlays/shell.nix`.** It is a normal
+  `flake = true` overlay for now, so `makeBubblewrapWrapper` is also part of the
+  flake's own `pkgs`. `src/overlays/dev.nix` extends the evaluated shell `pkgs`
+  with it as well.
 - **`makeBubblewrapWrapper.files` values are attrs.** Use
   `{ mode = "ro"|"rw"; source = ...; text = ...; }`. Keys are repo-relative, or
   `~/`-prefixed for `$HOME`. `source` and `text` are mutually exclusive, and
@@ -77,6 +86,16 @@ Common Nix library and packages I use across my repositories.
   wrapper files win. In `NIX_BUILD_TOP` and on non-Linux the wrapper writes the
   files into the checkout, runs the command directly, and still cleans up, so
   wrapper tests can stay `flake = true`.
+- **Shared bwrap profiles live in `src/lib/bwrap.nix`.** Use
+  `self.lib.bwrap.local` for no-network sandboxes and `self.lib.bwrap.network`
+  when the wrapped command needs the host network. `makeBubblewrapWrapper` takes
+  `network = true` to select the network profile.
+- **Provider overlays are captured on `selfLib.overlays`.** The base module in
+  `src/flake/default.nix` defines the overlay options and composes the
+  provider-facing overlays, so `selfLib.overlays.overlays` and
+  `selfLib.overlays.namespace` are available during bootstrap. Exported flake
+  modules read those values without reading downstream flake outputs. Overlay
+  `name` and `deps` keep their submodule defaults during bootstrap.
 - **Parametrized lib entries are functions.** `self.lib.containers` and
   `self.lib.benchmarks` map each declaration to `args: ...`, forwarding `args`
   to the declaration's `value`. Keep `args` out of the declarative entry so
@@ -93,14 +112,14 @@ Common Nix library and packages I use across my repositories.
 - **Dev modules get the flake-parts context and `shellPkgs`.** `self`, `inputs`,
   `specialArgs`, `shellPkgs`, and their keys are module arguments. The shell
   module recreates `_module.args.pkgs` from `config.nixpkgs.system`,
-  `config.nixpkgs.config`, and the merged overlay list; the shell-only overlay
-  is added and the global-bwrap overlay is appended with `lib.mkAfter`. Use
+  `config.nixpkgs.config`, and the merged overlay list; the shell overlay is
+  added and the global-bwrap overlay is appended with `lib.mkAfter`. Use
   `self.outPath` when a check needs a copy of the repository source.
 - **Generated text is formatted at shell entry.** `file.<path>.format` writes
   the text first and then runs the registered treefmt configuration from the
   shell hook. Set `format = false` when the exact text matters. Evaluation never
-  builds a formatter, so `nix flake check --all-systems` does not need
-  formatters for foreign systems.
+  builds a formatter, so `nix flake check` does not need formatters for foreign
+  systems.
 - **The shared `dev` CLI lives in `src/dev/cli.nix`.** Repo-specific subcommands
   are `cli.commands` entries; `check` and `format` register their subcommands
   automatically. Do not add a second `dev` package outside the CLI module.
@@ -135,7 +154,7 @@ Common Nix library and packages I use across my repositories.
 - **Dev shell behavior is tested with `self.devTests`.** Each test evaluates its
   `modules` into a shell, runs the shell's `shellHook` in a writable copy of
   `self.outPath`, and runs the test commands. `self = true` tests live in
-  `self.lib.devTests`; `flake = true` tests become
+  `self.lib.<system>.devTests`; `flake = true` tests become
   `perSystem.checks.dev-test-<name>`. Use `flake = false` only for tests that
   genuinely need a Linux environment or a live bwrap sandbox; CI builds only
   `flake = true` tests.

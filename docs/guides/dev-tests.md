@@ -49,7 +49,7 @@ A declared shell module can be reused with `config.self.devShells.<name>.value`.
 ## Keep a test out of checks
 
 Leave `flake` at its default `false` to keep the test in
-`self.lib.devTests.<system>` without building it during `nix flake check`. Use
+`self.lib.<system>.devTests` without building it during `nix flake check`. Use
 this for tests that need bwrap or another environment-specific tool.
 
 ## Run the tests

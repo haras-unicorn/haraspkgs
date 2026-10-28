@@ -1,42 +1,5 @@
-{ self, ... }:
+{ selfLib, ... }:
 
-let
-  pkgsModule = shellPkgs: { lib, config, ... }: {
-    options = {
-      nixpkgs = {
-        system = lib.mkOption {
-          type = lib.types.str;
-          default = shellPkgs.stdenv.hostPlatform.system;
-          description = "System used to recreate the shell package set.";
-        };
-
-        config = lib.mkOption {
-          type = lib.types.attrsOf lib.types.raw;
-          default = { };
-          description = "Nixpkgs configuration used to recreate the shell package set.";
-        };
-
-        overlays = lib.mkOption {
-          type = lib.types.listOf (lib.types.functionTo (lib.types.functionTo lib.types.raw));
-          default = [ ];
-          description = "Overlays used to recreate the shell package set.";
-        };
-      };
-    };
-
-    config = {
-      _module.args.pkgs = import shellPkgs.path {
-        inherit (config.nixpkgs) system config overlays;
-      };
-
-      nixpkgs.config = shellPkgs.config;
-
-      nixpkgs.overlays = lib.mkMerge [
-        (lib.mkBefore shellPkgs.overlays)
-      ];
-    };
-  };
-in
 {
   self.overlays.overlays.dev = {
     flake = true;
@@ -44,18 +7,53 @@ in
       final: prev:
       let
         evaluateDevShellAttrs =
-          specialArgs: devShells: devModules:
+          specialArgs: devModules: devShells:
           builtins.mapAttrs (
             _: shell:
             let
-              shellPkgs = final.extend self.overlays.shell;
+              shellPkgs = final.extend selfLib.overlays.overlays.shell;
+
+              pkgsModule = { lib, config, ... }: {
+                options = {
+                  nixpkgs = {
+                    system = lib.mkOption {
+                      type = lib.types.str;
+                      default = shellPkgs.stdenv.hostPlatform.system;
+                      description = "System used to recreate the shell package set.";
+                    };
+
+                    config = lib.mkOption {
+                      type = lib.types.attrsOf lib.types.raw;
+                      default = { };
+                      description = "Nixpkgs configuration used to recreate the shell package set.";
+                    };
+
+                    overlays = lib.mkOption {
+                      type = lib.types.listOf (lib.types.functionTo (lib.types.functionTo lib.types.raw));
+                      default = [ ];
+                      description = "Overlays used to recreate the shell package set.";
+                    };
+                  };
+                };
+
+                config = {
+                  _module.args.pkgs = import shellPkgs.path {
+                    inherit (config.nixpkgs) system config overlays;
+                  };
+
+                  nixpkgs.config = shellPkgs.config;
+
+                  nixpkgs.overlays = lib.mkMerge [
+                    (lib.mkBefore shellPkgs.overlays)
+                  ];
+                };
+              };
 
               config =
                 (shellPkgs.lib.evalModules {
                   inherit specialArgs;
                   modules = [
-                    (pkgsModule shellPkgs)
-                    self.devModules.default
+                    pkgsModule
                     shell
                   ]
                   ++ devModules;
@@ -75,9 +73,12 @@ in
                 env
                 passthru
                 ;
-              shellHook = self.lib.dev.concatCommands config.shellHook;
+              shellHook = selfLib.dev.concatCommands config.shellHook;
             }
           ) devShells;
+      in
+      {
+        inherit evaluateDevShellAttrs;
 
         makeDevTest =
           {
@@ -90,11 +91,11 @@ in
           }:
           let
             shell =
-              (evaluateDevShellAttrs moduleArgs {
+              (evaluateDevShellAttrs moduleArgs devModules {
                 test = {
                   imports = value.modules;
                 };
-              } devModules).test;
+              }).test;
           in
           shell.overrideAttrs (prev: {
             name = "dev-test-${name}";
@@ -104,13 +105,10 @@ in
               chmod -R u+w source
               cd source
               ${prev.shellHook or ""}
-              ${self.lib.dev.concatCommands value.commands}
+              ${selfLib.dev.concatCommands value.commands}
               mkdir -p $out
             '';
           });
-      in
-      {
-        inherit evaluateDevShellAttrs makeDevTest;
       };
   };
 }

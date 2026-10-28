@@ -40,8 +40,8 @@ Set `format.packages` for packages shared by every formatter. Set
 
 The `file` module writes generated text first and then runs the same treefmt
 configuration on those paths from its shell hook. Formatting is a runtime step,
-so `nix flake check --all-systems` does not build formatters for foreign
-systems. Set `format = false` on a file entry when the exact text matters.
+so `nix flake check` does not build formatters for foreign systems. Set
+`format = false` on a file entry when the exact text matters.
 
 Formatter configuration should be passed as store paths. For example, the self
 shell writes the Prettier, Markdownlint, and markdown-link-check configs to the

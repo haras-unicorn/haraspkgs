@@ -103,6 +103,7 @@
             pkgs.harasPackages.makeBubblewrapWrapper {
               name = "git";
               package = git.package;
+              network = true;
               runtimeInputs = [ git.package ] ++ lib.optional (cliPackage != null) cliPackage;
               env = {
                 GIT_CONFIG_COUNT = "1";

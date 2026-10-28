@@ -1,4 +1,4 @@
-{ self, selfLib, ... }:
+{ selfLib, ... }:
 
 {
   self.flakeModules.benchmarks = {
@@ -57,7 +57,7 @@
                 system:
                 builtins.mapAttrs (
                   _: benchmark: args:
-                  (config.self.lib.${system}.pkgs.extend self.overlays.benchmarks)
+                  (config.self.lib.${system}.pkgs.extend selfLib.overlays.overlays.benchmarks)
                   .${selfLib.overlays.namespace}.makeBenchmark
                     (benchmark // { inherit args; })
                 ) config.self.benchmarks

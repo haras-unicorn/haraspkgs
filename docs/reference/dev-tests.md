@@ -1,7 +1,7 @@
 # Dev tests
 
 `self.devTests` is an attribute set of dev shell module tests. Every entry is
-realized under `self.lib.devTests.<system>.<name>` and, when `flake = true`,
+realized under `self.lib.<system>.devTests.<name>` and, when `flake = true`,
 becomes `perSystem.checks.dev-test-<name>`. Tests live in
 `tests/dev/<module>.nix` and assert observable effects rather than evaluated
 config.
@@ -32,12 +32,12 @@ test options.
 
 <!-- markdownlint-disable MD013 -->
 
-| Option                     | Type                     | Default | Description                              |
-| -------------------------- | ------------------------ | ------- | ---------------------------------------- |
-| `devTests.<name>.modules`  | list of deferred modules | `[]`    | Modules used to build the test shell.    |
-| `devTests.<name>.commands` | commands                 | `[]`    | Commands run after the shell hook.       |
-| `devTests.<name>.self`     | bool                     | `true`  | Include the test in `self.lib.devTests`. |
-| `devTests.<name>.flake`    | bool                     | `false` | Emit the test as a per-system check.     |
+| Option                     | Type                     | Default | Description                                       |
+| -------------------------- | ------------------------ | ------- | ------------------------------------------------- |
+| `devTests.<name>.modules`  | list of deferred modules | `[]`    | Modules used to build the test shell.             |
+| `devTests.<name>.commands` | commands                 | `[]`    | Commands run after the shell hook.                |
+| `devTests.<name>.self`     | bool                     | `true`  | Include the test in `self.lib.<system>.devTests`. |
+| `devTests.<name>.flake`    | bool                     | `false` | Emit the test as a per-system check.              |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -57,15 +57,15 @@ The check fails if the shell hook or any command exits non-zero.
 
 `flake = true` tests become checks, so CI builds them on every supported system.
 Use `flake = false` for tests that need bwrap or another environment-specific
-tool; those tests stay in `self.lib.devTests.<system>` and are run locally.
+tool; those tests stay in `self.lib.<system>.devTests` and are run locally.
 `self` keeps its default `true`, so a test can be both local-only and visible in
 the self mirror.
 
 ## Outputs
 
-- `self.lib.devTests.<system>.<name>` is the made test derivation.
+- `self.lib.<system>.devTests.<name>` is the made test derivation.
 - Each test with `flake = true` becomes `perSystem.checks.dev-test-<name>`.
-- `self = true` (the default) keeps the test in `self.lib.devTests`.
+- `self = true` (the default) keeps the test in `self.lib.<system>.devTests`.
 
 ## Related
 

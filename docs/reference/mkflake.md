@@ -30,6 +30,13 @@ haraspkgs.lib.makeFlake {
 - Passes file paths, functions, and attribute sets through as modules.
 - Imports every haraspkgs module exported through `flake.flakeModules`,
   including `base`.
+- Defines `self.overlays` in the base module, so overlay submodule defaults are
+  available during bootstrap and exported modules can read provider overlays
+  from `selfLib.overlays`.
+- Keeps the bootstrap independent from final flake outputs: exported module
+  values use the provider `selfLib` captured at haraspkgs evaluation time, not
+  the downstream `self` outputs. See
+  [the self namespace](../explanation/self-namespace.md#provider-and-downstream-scopes).
 - Calls `flake-parts.lib.mkFlake` with the collected modules.
 - Uses `flake-parts` and `import-tree` from the `haraspkgs` closure unless the
   downstream provides them.

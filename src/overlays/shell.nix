@@ -1,7 +1,8 @@
+{ selfLib, ... }:
+
 {
   self.overlays.overlays.shell = {
     deps = [ "flake-root" ];
-    self = false;
     flake = true;
     value = final: prev: {
       makeBubblewrapWrapper =
@@ -13,6 +14,7 @@
           stdin ? null,
           files ? { },
           runtimeInputs ? [ ],
+          network ? false,
           bwrapArgs ? [ ],
         }:
         let
@@ -184,29 +186,18 @@
             trap cleanup_files EXIT
           '';
 
-          defaultArguments = [
-            (quote "--die-with-parent")
-            (quote "--unshare-pid")
-            (quote "--unshare-ipc")
-            (quote "--unshare-uts")
-            (quote "--ro-bind")
+          baseArguments = builtins.map quote (if network then selfLib.bwrap.network else selfLib.bwrap.local);
+
+          defaultArguments = baseArguments ++ [
+            (quote "--ro-bind-try")
             (quote "/nix")
             (quote "/nix")
-            (quote "--ro-bind")
-            (quote "/etc")
-            (quote "/etc")
             (quote "--ro-bind-try")
             "\"$HOME\""
             "\"$HOME\""
             (quote "--ro-bind-try")
             (quote "/run")
             (quote "/run")
-            (quote "--proc")
-            (quote "/proc")
-            (quote "--dev")
-            (quote "/dev")
-            (quote "--tmpfs")
-            (quote "/tmp")
             (quote "--chdir")
             "\"$PWD\""
           ];

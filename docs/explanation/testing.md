@@ -24,7 +24,7 @@ content that was written, commands that succeed, and packages that are on
 `flake = true` tests become `checks.<system>.dev-test-<name>` and run in CI.
 Leave `flake` at `false` for tests that need bwrap or another
 environment-specific tool; they remain available through
-`self.lib.devTests.<system>` and are run locally.
+`self.lib.<system>.devTests` and are run locally.
 
 ## Checks and NixOS tests
 

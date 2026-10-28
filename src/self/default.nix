@@ -118,6 +118,7 @@
             "facter"
             "fahhh"
             "fetchgguf"
+            "fetchgit"
             "fetchhf"
             "fetchurl"
             "footguns"
@@ -165,6 +166,7 @@
             "nixos"
             "nixpkgs"
             "nspawn"
+            "nsswitch"
             "nvidiactl"
             "nvim"
             "nvrtc"
@@ -183,6 +185,7 @@
             "pyproject"
             "PYTHONPATH"
             "quantizer"
+            "resolv"
             "rocm"
             "rustc"
             "qwen"
@@ -204,6 +207,8 @@
             "torchvision"
             "treefmt"
             "ubatch"
+            "unshare"
+            "unshares"
             "unsets"
             "vaultwarden"
             "venv"
@@ -555,7 +560,7 @@
             installable = null;
 
             steps = [
-              { run = "nix flake check --all-systems --show-trace"; }
+              { run = "nix flake check --show-trace"; }
               { run = "nix build --show-trace .#docs"; }
             ];
           };

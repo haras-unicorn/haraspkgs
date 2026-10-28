@@ -1,8 +1,4 @@
-{
-  selfLib,
-  self,
-  ...
-}:
+{ selfLib, ... }:
 
 {
   self.flakeModules.containers = {
@@ -45,7 +41,7 @@
                 system:
                 builtins.mapAttrs (
                   _: container: args:
-                  (config.self.lib.${system}.pkgs.extend self.overlays.containers)
+                  (config.self.lib.${system}.pkgs.extend selfLib.overlays.overlays.containers)
                   .${selfLib.overlays.namespace}.makeContainer
                     (
                       container
