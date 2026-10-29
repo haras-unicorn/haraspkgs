@@ -46,6 +46,13 @@ The module uses the downstream `nix-unit` input when it is present and falls
 back to the haraspkgs `nix-unit` input otherwise. Downstream flakes do not need
 to add `nix-unit` themselves.
 
+nix-unit evaluates in a sandbox without network access, so every input of the
+downstream flake is passed to it together with all of its transitive inputs,
+keyed by input path (`haraspkgs`, `haraspkgs/nixpkgs`,
+`haraspkgs/flake-parts/nixpkgs-lib`, ...). The whole input hierarchy is included
+at any depth; downstream flakes do not need to collect nested inputs themselves.
+The helper that does this is `self.lib.flattenInputs`.
+
 ## Outputs
 
 - `checks.<system>.nix-unit` runs the per-system suites and the system-agnostic

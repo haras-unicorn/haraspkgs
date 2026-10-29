@@ -17,6 +17,16 @@
         suite = lib.types.lazyAttrsOf lib.types.raw;
 
         nixUnit = if inputs ? nix-unit then inputs.nix-unit else selfLib.lib.inputs.nix-unit;
+
+        # nix-unit evaluates in a sandbox without network, so the transitive
+        # inputs of every input must be overridden too, keyed by input path
+        # (`<input>/<nested>/...`).
+        unitInputs = selfLib.flattenInputs (
+          builtins.removeAttrs inputs [ "self" ]
+          // {
+            nix-unit = nixUnit;
+          }
+        );
       in
       {
         imports = [
@@ -29,9 +39,7 @@
                 { config, ... }:
                 {
                   nix-unit.tests = config.self.unitTests;
-                  nix-unit.inputs = builtins.removeAttrs inputs [ "self" ] // {
-                    nix-unit = nixUnit;
-                  };
+                  nix-unit.inputs = unitInputs;
                 };
             };
           }
