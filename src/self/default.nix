@@ -552,10 +552,8 @@
               push.branches = [ "main" ];
             };
 
-            matrix.os = [
-              "ubuntu-latest"
-              "macos-latest"
-            ];
+            # NOTE: macos-latest is disabled until the darwin build is fixed
+            matrix.os = [ "ubuntu-latest" ];
 
             installable = null;
 
