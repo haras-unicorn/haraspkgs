@@ -252,7 +252,7 @@
               ''
             else
               ''
-                if [ -n "''${NIX_BUILD_TOP:-}" ]; then
+                if [ -n "''${NIX_BUILD_TOP:-}" ] || [ -n "''${HARASPKGS_MATERIALIZE:-}" ]; then
                   ${materializeLines}
                   ${commandWithStdin}
                 else

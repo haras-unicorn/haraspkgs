@@ -110,7 +110,13 @@ to the caller's current directory. The wrapper appends `"$@"` after its fixed
 The overlay is exported as `flake.overlays.shell` and, because it is
 `self = true`, it is also part of the flake's self package overlays. The helper
 is additionally injected into the `pkgs` used to evaluate and construct dev
-shells. In a sandbox or on non-Linux systems the wrapper writes `files` into the
-checkout, runs the command directly, and still performs cleanup.
+shells. In a Nix build sandbox, on non-Linux systems, or whenever
+`HARASPKGS_MATERIALIZE` is set to a non-empty value, the wrapper writes `files`
+into the checkout, runs the command directly, and still performs cleanup. Set
+the variable when `bwrap` cannot run, for example inside another sandbox:
+
+```sh
+HARASPKGS_MATERIALIZE=1 example-wrapper --flag
+```
 
 See the [overlay reference](../reference/overlays.md) for the option shape.
