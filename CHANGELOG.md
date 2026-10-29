@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.1.2...v1.2.0) (2026-10-29)
+
+
+### Features
+
+* bwrap materialize env var ([#10](https://github.com/haras-unicorn/haraspkgs/issues/10)) ([1d4a9da](https://github.com/haras-unicorn/haraspkgs/commit/1d4a9da22da7684185f0b530e9c5ce3fe33f7b16))
+
+
+### Bug Fixes
+
+* disable macos ci ([#12](https://github.com/haras-unicorn/haraspkgs/issues/12)) ([dbf1712](https://github.com/haras-unicorn/haraspkgs/commit/dbf1712cc0a6c03a465781749e3fa2e28633407e))
+* nix-unit inputs ([#13](https://github.com/haras-unicorn/haraspkgs/issues/13)) ([497432b](https://github.com/haras-unicorn/haraspkgs/commit/497432b7091fce115c5f5159f20871e87cf2fef7))
+
 ## [1.1.2](https://github.com/haras-unicorn/haraspkgs/compare/v1.1.1...v1.1.2) (2026-10-28)
 
 
