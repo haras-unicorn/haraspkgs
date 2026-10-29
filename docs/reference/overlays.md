@@ -139,10 +139,12 @@ a read-only overlay lower layer, so `bwrap` sees them without writing into the
 checkout. The project root is the overlay upper layer, so edits persist
 normally. The wrapper runs the command as a child so an `EXIT` trap can remove
 the staging and work directories, and it never deletes the project root or its
-parent directories. In a Nix build sandbox (`NIX_BUILD_TOP` is set) and on
-non-Linux systems it falls back to writing the files into the project root and
-running the command directly; cleanup still happens. This is what lets dev tests
-exercise wrappers in CI.
+parent directories. In a Nix build sandbox (`NIX_BUILD_TOP` is set), when
+`HARASPKGS_MATERIALIZE` is set to a non-empty value, and on non-Linux systems it
+falls back to writing the files into the project root and running the command
+directly; cleanup still happens. This is what lets dev tests exercise wrappers
+in CI, and `HARASPKGS_MATERIALIZE` does the same for any environment where
+nested `bwrap` is unavailable.
 
 The shell overlay merges global `bwrap.files` into every wrapper; explicit
 `files` entries win for the same key. `stdin`, `network`, and `bwrapArgs` are

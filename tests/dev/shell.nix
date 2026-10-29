@@ -81,4 +81,28 @@
       ];
     };
   };
+
+  self.devTests.bwrap-materialize = {
+    flake = true;
+    value = {
+      modules = [
+        ({ pkgs, ... }: {
+          bwrap.files."materialized.txt".text = "materialized\n";
+          packages = [
+            (pkgs.harasPackages.makeBubblewrapWrapper {
+              name = "read-materialized";
+              package = pkgs.writeShellScriptBin "read-materialized" ''
+                cat materialized.txt > out.txt
+              '';
+            })
+          ];
+        })
+      ];
+      commands = [
+        "env -u NIX_BUILD_TOP HARASPKGS_MATERIALIZE=1 read-materialized"
+        "grep -qx materialized out.txt"
+        "test ! -e materialized.txt"
+      ];
+    };
+  };
 }
