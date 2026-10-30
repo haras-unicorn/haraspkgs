@@ -32,7 +32,10 @@
         };
 
         baseSteps = [
-          { uses = "actions/checkout@v4"; }
+          {
+            uses = "actions/checkout@v4";
+            "with".fetch-depth = 0;
+          }
         ]
         ++ installNixStep
         ++ cachixStep
