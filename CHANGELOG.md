@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/haras-unicorn/haraspkgs/compare/v1.2.0...v1.2.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* checkout with fetch depth 0 ([#14](https://github.com/haras-unicorn/haraspkgs/issues/14)) ([daee0cd](https://github.com/haras-unicorn/haraspkgs/commit/daee0cdd14b997c4bc07496ec7898ed811419d86))
+
 ## [1.2.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.1.2...v1.2.0) (2026-10-29)
 
 
