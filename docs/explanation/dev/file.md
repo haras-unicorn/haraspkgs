@@ -7,15 +7,31 @@ The `file` module turns option definitions into shell-hook commands. It owns
 - a pre-hook command block for links and writes,
 - generated `.gitignore` text for paths with `ignore = true`.
 
-Text and ensured files are written raw. When the `format` module has enabled
-formatters, the file module's shell hook runs treefmt on the paths written with
-`format = true` after the write block. `format = false` opts a path out.
+## Write only on change
+
+The shell hook never rewrites a file that is already right. For each `text`
+entry it builds the final content, compares it with the file on disk, and writes
+only when they differ. Entering the shell, or direnv reloading it, leaves
+up-to-date files untouched: no deleted files, no new modification times.
+
+When the `format` module has enabled formatters, the content first goes through
+`treefmt --stdin` and is held in memory, so formatting never writes to the
+checkout. `format = false` skips that step and keeps the exact text. Symlinks
+are replaced only when they point somewhere else, and `ensure` files are created
+only when missing.
+
+## Tree-wide formatting
+
+Formatting the whole tree is not the hook's job; that is `dev format`. The file
+module adds every `format = false` path to `format.excludes`, so `dev format`
+does not reformat text that must stay exact, which the hook would only write
+back.
 
 ## Generation order
 
-Links run first, then writes, then formatting. All three run before other shell
-hook commands because the module uses `lib.mkBefore` on `shellHook`. Generated
-files reach later linting and testing hooks in their final shape.
+Links run first, then writes. Both run before other shell hook commands because
+the module uses `lib.mkBefore` on `shellHook`. Generated files reach later
+linting and testing hooks in their final shape.
 
 ## The gitignore seam
 

@@ -60,7 +60,6 @@ that are not `nix build`.
 $ nix develop
 > writing
 write .github/workflows/check.yaml
-> formatting generated files
 ```
 
 The `workflows` passthru check is part of `nix flake check`, so a stale

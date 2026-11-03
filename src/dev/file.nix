@@ -6,6 +6,7 @@
       {
         lib,
         config,
+        options,
         pkgs,
         ...
       }:
@@ -22,67 +23,73 @@
 
         formatCommand = lib.attrByPath [ "format" "command" ] null config;
 
-        formattedFiles = builtins.filter (file: file.format) textFiles;
+        formatBinary = lib.optionalString (formatCommand != null) "${formatCommand}/bin/format";
 
-        formatEnabled = formatCommand != null && formattedFiles != [ ];
+        formatterFor = file: if file.format then formatBinary else "";
 
-        formatSetup = lib.optionalString formatEnabled "declare -a __haraspkgs_format_paths=()\n";
+        unformattedPaths = builtins.map (file: file.path) (builtins.filter (file: !file.format) textFiles);
 
-        appendFormatPath =
-          file:
-          lib.optionalString (
-            formatEnabled && file.format
-          ) "__haraspkgs_format_paths+=(${lib.escapeShellArg file.path})";
+        writeFunctions = ''
+          __haraspkgs_write_file() {
+            local path="$1" content="$2" executable="$3" formatter="$4"
+            local desired="$content"
 
-        writeFiles = builtins.map (
-          file:
-          let
-            path = lib.escapeShellArg file.path;
-            dir = lib.escapeShellArg (builtins.dirOf file.path);
-            content = fileText (if file.text != null then file.text else file.ensure);
-            writeContent = "printf '%s' ${lib.escapeShellArg content} > ${path}";
-            makeExecutable = lib.optionalString file.executable "chmod +x ${path}";
-            appendFormat = appendFormatPath file;
-          in
-          {
-            command = ''
-              mkdir -p ${dir}
-            ''
-            + lib.optionalString (file.text != null) ''
-              rm -f ${path}
-            ''
-            + (
-              if file.text != null then
-                ''
-                  ${writeContent}
-                  ${makeExecutable}
-                  ${appendFormat}
-                  printf "write %s\n" ${path} >&2
-                ''
-              else
-                ''
-                  if [ ! -f ${path} ]; then
-                    ${writeContent}
-                    ${makeExecutable}
-                    ${appendFormat}
-                  fi
-                  printf "ensure %s\n" ${path} >&2
-                ''
-            );
-          }
-        ) textFiles;
-
-        writeCommands =
-          formatSetup + builtins.concatStringsSep "\n" (builtins.map (file: file.command) writeFiles);
-
-        formatHook = lib.optional formatEnabled {
-          header = "formatting generated files";
-          text = ''
-            if [ "''${#__haraspkgs_format_paths[@]}" -gt 0 ]; then
-              ${formatCommand}/bin/format "''${__haraspkgs_format_paths[@]}"
+            if [ -n "$formatter" ]; then
+              desired="$(printf '%s' "$content" | "$formatter" --quiet --stdin "$path" && printf x)"
+              if [ "''${desired: -1}" != x ]; then
+                printf "format failed %s\n" "$path" >&2
+                return 1
+              fi
+              desired="''${desired%x}"
             fi
-          '';
-        };
+
+            mkdir -p "$(dirname -- "$path")"
+            if [ -L "$path" ]; then
+              rm -f -- "$path"
+            fi
+            if ! printf '%s' "$desired" | cmp -s - "$path"; then
+              printf '%s' "$desired" > "$path"
+              printf "write %s\n" "$path" >&2
+            fi
+
+            if [ -n "$executable" ]; then
+              if [ ! -x "$path" ]; then chmod +x "$path"; fi
+            elif [ -x "$path" ]; then
+              chmod -x "$path"
+            fi
+          }
+
+          __haraspkgs_ensure_file() {
+            if [ ! -f "$1" ]; then
+              __haraspkgs_write_file "$@"
+            fi
+          }
+        '';
+
+        writeCalls = builtins.concatStringsSep "\n" (
+          builtins.map (
+            file:
+            builtins.concatStringsSep " " [
+              (if file.text != null then "__haraspkgs_write_file" else "__haraspkgs_ensure_file")
+              (lib.escapeShellArg file.path)
+              (lib.escapeShellArg (fileText (if file.text != null then file.text else file.ensure)))
+              (lib.escapeShellArg (lib.optionalString file.executable "1"))
+              (lib.escapeShellArg (formatterFor file))
+            ]
+          ) textFiles
+        );
+
+        linkFunction = ''
+          __haraspkgs_link_file() {
+            local path="$1" target="$2"
+
+            mkdir -p "$(dirname -- "$path")"
+            if [ "$(readlink -- "$path" || true)" != "$target" ]; then
+              ln -sfn -- "$target" "$path"
+              printf "link %s\n" "$path" >&2
+            fi
+          }
+        '';
 
         linkFiles = builtins.map (
           file:
@@ -103,19 +110,14 @@
           }
         ) sourceFiles;
 
-        linkCommands = builtins.concatStringsSep "\n" (
+        linkCalls = builtins.concatStringsSep "\n" (
           builtins.map (
             file:
-            let
-              path = lib.escapeShellArg file.path;
-              dir = lib.escapeShellArg (builtins.dirOf file.path);
-              source = lib.escapeShellArg file.source;
-            in
-            ''
-              mkdir -p ${dir}
-              ln -sfn ${source} ${path}
-              printf "link %s\n" ${path} >&2
-            ''
+            builtins.concatStringsSep " " [
+              "__haraspkgs_link_file"
+              (lib.escapeShellArg file.path)
+              (lib.escapeShellArg file.source)
+            ]
           ) linkFiles
         );
 
@@ -166,13 +168,13 @@
                   format = lib.mkOption {
                     type = lib.types.bool;
                     default = true;
-                    description = "Format the generated file when the shell starts.";
+                    description = "Format the generated text before writing it. When false, the exact text is written and `dev format` leaves the file alone.";
                   };
 
                   executable = lib.mkOption {
                     type = lib.types.bool;
                     default = false;
-                    description = "Whether to make the generated file executable.";
+                    description = "Whether to make the generated or linked file executable.";
                   };
 
                   ignore = lib.mkOption {
@@ -187,23 +189,35 @@
           );
         };
 
-        config = {
-          file.".gitignore".text = lib.mkIf (ignoreText != "") (lib.mkBefore ignoreText);
+        config = lib.mkMerge [
+          {
+            file.".gitignore".text = lib.mkIf (ignoreText != "") (lib.mkBefore ignoreText);
 
-          packages = builtins.map ({ package, ... }: package) linkFiles;
+            packages = builtins.map ({ package, ... }: package) linkFiles;
 
-          shellHook = lib.mkBefore (
-            lib.optional (linkCommands != "") {
-              text = linkCommands;
-              header = "linking";
-            }
-            ++ lib.optional (writeCommands != "") {
-              text = writeCommands;
-              header = "writing";
-            }
-            ++ formatHook
-          );
-        };
+            shellHook = lib.mkBefore (
+              lib.optional (linkCalls != "") {
+                header = "linking";
+                text = ''
+                  ${linkFunction}
+                  ${linkCalls}
+                  unset -f __haraspkgs_link_file
+                '';
+              }
+              ++ lib.optional (writeCalls != "") {
+                header = "writing";
+                text = ''
+                  ${writeFunctions}
+                  ${writeCalls}
+                  unset -f __haraspkgs_write_file __haraspkgs_ensure_file
+                '';
+              }
+            );
+          }
+          (lib.optionalAttrs (options ? format) {
+            format.excludes = unformattedPaths;
+          })
+        ];
       };
   };
 }

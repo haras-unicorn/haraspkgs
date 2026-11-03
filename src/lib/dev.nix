@@ -102,5 +102,25 @@
           }) (lib.filterAttrs (_: filter) (value.passthru.${attr} or { }))
         ) (lib.attrsToList devShells)
       );
+
+    repositoryPaths =
+      root: paths:
+      let
+        prefix = "${root}/";
+
+        inRepository = builtins.filter (path: lib.hasPrefix prefix (builtins.toString path)) paths;
+
+        isDirectory = path: builtins.readFileType path == "directory";
+
+        # The result is a repository-relative path, not a store path. Stripping
+        # the prefix from a string like "${self}/src" keeps the context of the
+        # whole source, which would make the dev shell depend on it.
+        relative =
+          path: builtins.unsafeDiscardStringContext (lib.removePrefix prefix (builtins.toString path));
+      in
+      {
+        dirs = builtins.map relative (builtins.filter isDirectory inRepository);
+        files = builtins.map relative (builtins.filter (path: !(isDirectory path)) inRepository);
+      };
   };
 }

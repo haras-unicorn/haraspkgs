@@ -18,10 +18,11 @@ Put the options in a dev module or directly in a shell:
 }
 ```
 
-`text` is rewritten every time the shell starts. `ensure` leaves an existing
-file alone, which is useful for local state that should not be overwritten.
-Generated text is formatted by the matching formatter when the shell starts and
-the `format` module is active; set `format = false` to keep the exact text.
+`text` is kept in sync every time the shell starts: the file is written only
+when its content would change. `ensure` leaves an existing file alone, which is
+useful for local state that should not be overwritten. Generated text is
+formatted by the matching formatter before it is compared and written when the
+`format` module is active; set `format = false` to keep the exact text.
 
 ## Enter the shell
 
@@ -29,13 +30,12 @@ the `format` module is active; set `format = false` to keep the exact text.
 $ nix develop
 > writing
 write .envrc
-ensure .keep
-> formatting generated files
+write .keep
 $ cat .envrc
 use flake
 ```
 
-The generated shell hook reports each file it creates. If a file has
+The generated shell hook reports each file it changes. If a file has
 `source = ./tool.sh`, it is linked from the store instead; source files are
 added to `.gitignore` by default.
 

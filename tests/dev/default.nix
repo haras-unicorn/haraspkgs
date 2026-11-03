@@ -10,6 +10,8 @@
         "test ! -e .helix/languages.toml"
         "test -f .gitattributes"
         "test -f .gitignore"
+        "grep -qx 'watch_dir src' .envrc"
+        "grep -qx '/.direnv' .gitignore"
         "test -f .github/workflows/check.yaml"
         "test -f .github/workflows/docs.yaml"
         "test -f .github/workflows/release.yaml"

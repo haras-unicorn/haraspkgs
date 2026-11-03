@@ -21,7 +21,6 @@ The `code-of-conduct` module writes a Contributor Covenant file through the
 $ nix develop
 > writing
 write CODE_OF_CONDUCT.md
-> formatting generated files
 $ sed -n '1,5p' CODE_OF_CONDUCT.md
 # Contributor Covenant Code of Conduct
 

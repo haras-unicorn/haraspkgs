@@ -33,15 +33,17 @@ Each formatter has:
 - `packages`: runtime dependencies for the command,
 - `enable`: whether treefmt should run it.
 
-Set `format.packages` for packages shared by every formatter. Set
-`format.treefmtPackage` to use a different treefmt.
+Set `format.packages` for packages shared by every formatter, `format.excludes`
+for globs that no formatter should touch, and `format.treefmtPackage` to use a
+different treefmt.
 
 ## Format generated files
 
-The `file` module writes generated text first and then runs the same treefmt
-configuration on those paths from its shell hook. Formatting is a runtime step,
-so `nix flake check` does not build formatters for foreign systems. Set
-`format = false` on a file entry when the exact text matters.
+The `file` module formats generated text in memory with the same treefmt
+configuration from its shell hook and writes the file only when the result
+differs. Formatting is a runtime step, so `nix flake check` does not build
+formatters for foreign systems. Set `format = false` on a file entry when the
+exact text matters; the path is then added to `format.excludes`.
 
 Formatter configuration should be passed as store paths. For example, the self
 shell writes the Prettier, Markdownlint, and markdown-link-check configs to the

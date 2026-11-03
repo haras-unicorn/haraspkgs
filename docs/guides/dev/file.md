@@ -18,16 +18,18 @@ exported as `flake.devModules.file` and included in the default group.
 }
 ```
 
-Use `file.<path>.text` to overwrite on every entry, `ensure` to leave existing
-files alone, and `source` to link an immutable store copy. Text is written
-first, then formatted by the matching formatter when the shell starts; set
-`format = false` to keep the exact text. Source files are added to the generated
-`.gitignore` by default; set `ignore = false` to keep one out.
+Use `file.<path>.text` to keep a file in sync on every entry, `ensure` to leave
+existing files alone, and `source` to link an immutable store copy. Text is
+formatted in memory by the matching formatter and written only when it differs
+from the file on disk; set `format = false` to keep the exact text. Source files
+are added to the generated `.gitignore` by default; set `ignore = false` to keep
+one out.
 
 ## Enter the shell
 
 The files are created from the bash shell hook before other hook commands. A
-source file becomes a symlink to the store:
+source file becomes a symlink to the store. The hook reports only what it
+changed, so a second entry prints nothing under each heading:
 
 ```console
 $ nix develop
@@ -35,8 +37,7 @@ $ nix develop
 link .tool
 > writing
 write .envrc
-ensure .keep
-> formatting generated files
+write .keep
 ```
 
 `file.".gitignore".text` receives the generated ignore patterns first. An

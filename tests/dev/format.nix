@@ -21,7 +21,7 @@
             format.formatters.example = {
               packages = [ formatter ];
               command = "test-formatter";
-              includes = [ "format-target.txt" ];
+              includes = [ "*.txt" ];
             };
           }
         )

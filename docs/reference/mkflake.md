@@ -44,6 +44,25 @@ haraspkgs.lib.makeFlake {
 `modules` defaults to `[ ]`. The top-level `haraspkgs` flake passes
 `[ ./src ./tests ]`.
 
+## Special arguments
+
+`makeFlake` adds one argument of its own to `specialArgs`, next to the ones you
+pass:
+
+<!-- markdownlint-disable MD013 -->
+
+| Argument      | Type                      | Description                                                                 |
+| ------------- | ------------------------- | --------------------------------------------------------------------------- |
+| `modulePaths` | list of paths and strings | The path and string entries of `modules`, as written, before `import-tree`. |
+
+<!-- markdownlint-enable MD013 -->
+
+It reaches every module evaluation: flake modules, dev modules, machines and
+containers. String entries such as `"${self}/src"` count as well as path
+literals like `./src`. Directories stay directories and are not expanded. The
+`direnv` dev module uses it as the default for its watch lists. A `modulePaths`
+you pass in `specialArgs` yourself takes precedence.
+
 ## Downstream requirements
 
 - A `nixpkgs` input, followed into `haraspkgs`:
