@@ -1,3 +1,5 @@
+{ selfLib, ... }:
+
 {
   self.devModules.file = {
     self = false;
@@ -13,11 +15,45 @@
       let
         files = builtins.map ({ name, value }: value // { path = name; }) (lib.attrsToList config.file);
 
-        enabledFiles = builtins.filter (file: file.enable) files;
+        partialKinds = [
+          "text"
+          "json"
+          "toml"
+          "yaml"
+        ];
 
-        textFiles = builtins.filter (file: file.text != null || file.ensure != null) enabledFiles;
+        partialKind = file: builtins.head (builtins.attrNames file.partial);
 
-        sourceFiles = builtins.filter (file: file.source != null) enabledFiles;
+        validatePartial =
+          file:
+          lib.assertMsg (
+            file.partial == null || ((file.text != null) != (file.source != null) && file.ensure == null)
+          ) ''file."${file.path}".partial needs exactly one of text and source, and no ensure'';
+
+        enabledFiles = builtins.map (
+          file:
+          assert validatePartial file;
+          file
+        ) (builtins.filter (file: file.enable) files);
+
+        textFiles = builtins.filter (
+          file: file.text != null || file.ensure != null || file.partial != null
+        ) enabledFiles;
+
+        sourceFiles = builtins.filter (file: file.source != null && file.partial == null) enabledFiles;
+
+        partialFiles = builtins.filter (file: file.partial != null) enabledFiles;
+
+        needsYq = builtins.any (file: partialKind file != "text") partialFiles;
+
+        fileContent =
+          file:
+          if file.text != null then
+            file.text
+          else if file.ensure != null then
+            file.ensure
+          else
+            builtins.readFile file.source;
 
         fileText = text: (lib.trim text) + "\n";
 
@@ -29,19 +65,81 @@
 
         unformattedPaths = builtins.map (file: file.path) (builtins.filter (file: !file.format) textFiles);
 
+        mergeFunction = ''
+          __haraspkgs_merge_partial() {
+            local path="$1" content="$2" kind="$3" current needle
+
+            if [ ! -f "$path" ]; then
+              __haraspkgs_merged="$content"
+              return 0
+            fi
+
+            if [ "$kind" = text ]; then
+              current="$(cat -- "$path" && printf x)"
+              current="''${current%x}"
+              needle="''${content%$'\n'}"
+              case "$current" in
+                "" | *$'\n') ;;
+                *) current="$current"$'\n' ;;
+              esac
+              if [[ "$current" == *"$needle"* ]]; then
+                __haraspkgs_merged="$current"
+              else
+                __haraspkgs_merged="$current$content"
+              fi
+              return 0
+            fi
+
+            # shellcheck disable=SC2016 # $item is a yq variable, not a shell one
+            __haraspkgs_merged="$(
+              yq eval-all -p "$kind" -o "$kind" \
+                '. as $item ireduce ({}; . * $item)' \
+                "$path" <(printf '%s' "$content") && printf x
+            )" || return 1
+            __haraspkgs_merged="''${__haraspkgs_merged%x}"
+          }
+        '';
+
+        # treefmt hands wrapped formatters a temporary copy of the text. The
+        # bubblewrap profiles give them a private /tmp, so the copy goes in a
+        # directory the wrapper is told to bind into the sandbox.
+        formatFunction = ''
+          __haraspkgs_format_content() {
+            local path="$1" content="$2" formatter="$3" base scratch
+
+            __haraspkgs_formatted="$content"
+            if [ -z "$formatter" ]; then
+              return 0
+            fi
+
+            base="''${TMPDIR:-/tmp}/haraspkgs"
+            mkdir -p -- "$base" || return 1
+            scratch="$(mktemp -d "$base/format.XXXXXX")" || return 1
+            __haraspkgs_formatted="$(
+              printf '%s' "$content" |
+                ${selfLib.bwrap.scratchVariable}="$scratch" TMPDIR="$scratch" \
+                  "$formatter" --quiet --stdin "$path" &&
+                printf x
+            )"
+            rm -rf -- "$scratch"
+
+            if [ "''${__haraspkgs_formatted: -1}" != x ]; then
+              printf "format failed %s\n" "$path" >&2
+              return 1
+            fi
+            __haraspkgs_formatted="''${__haraspkgs_formatted%x}"
+          }
+        '';
+
         writeFunctions = ''
+          ${formatFunction}
+
           __haraspkgs_write_file() {
             local path="$1" content="$2" executable="$3" formatter="$4"
-            local desired="$content"
+            local desired
 
-            if [ -n "$formatter" ]; then
-              desired="$(printf '%s' "$content" | "$formatter" --quiet --stdin "$path" && printf x)"
-              if [ "''${desired: -1}" != x ]; then
-                printf "format failed %s\n" "$path" >&2
-                return 1
-              fi
-              desired="''${desired%x}"
-            fi
+            __haraspkgs_format_content "$path" "$content" "$formatter" || return 1
+            desired="$__haraspkgs_formatted"
 
             mkdir -p "$(dirname -- "$path")"
             if [ -L "$path" ]; then
@@ -64,20 +162,119 @@
               __haraspkgs_write_file "$@"
             fi
           }
+
+          ${mergeFunction}
+
+          __haraspkgs_write_partial() {
+            local path="$1" content="$2" executable="$3" formatter="$4" kind="$5"
+
+            __haraspkgs_merge_partial "$path" "$content" "$kind" || return 1
+            __haraspkgs_write_file "$path" "$__haraspkgs_merged" "$executable" "$formatter"
+          }
         '';
 
-        writeCalls = builtins.concatStringsSep "\n" (
-          builtins.map (
-            file:
-            builtins.concatStringsSep " " [
-              (if file.text != null then "__haraspkgs_write_file" else "__haraspkgs_ensure_file")
-              (lib.escapeShellArg file.path)
-              (lib.escapeShellArg (fileText (if file.text != null then file.text else file.ensure)))
-              (lib.escapeShellArg (lib.optionalString file.executable "1"))
-              (lib.escapeShellArg (formatterFor file))
+        writeCall =
+          file:
+          let
+            writer =
+              if file.partial != null then
+                "__haraspkgs_write_partial"
+              else if file.text != null then
+                "__haraspkgs_write_file"
+              else
+                "__haraspkgs_ensure_file";
+          in
+          builtins.concatStringsSep " " (
+            [ writer ]
+            ++ builtins.map lib.escapeShellArg [
+              file.path
+              (fileText (fileContent file))
+              (lib.optionalString file.executable "1")
+              (formatterFor file)
             ]
-          ) textFiles
-        );
+            ++ lib.optional (file.partial != null) (partialKind file)
+          );
+
+        writeCalls = builtins.concatStringsSep "\n" (builtins.map writeCall textFiles);
+
+        # Ignored files are not in the repository source a check runs on.
+        checkedFiles = builtins.filter (file: !file.ignore) textFiles;
+
+        checkFunction = ''
+          ${formatFunction}
+
+          ${mergeFunction}
+
+          __haraspkgs_check_content() {
+            local path="$1" content="$2" executable="$3" formatter="$4"
+
+            __haraspkgs_format_content "$path" "$content" "$formatter" || return 1
+            if ! printf '%s' "$__haraspkgs_formatted" | cmp -s - "$path"; then
+              printf "file differs from its generated text %s\n" "$path" >&2
+              return 1
+            fi
+
+            if [ -n "$executable" ] && [ ! -x "$path" ]; then
+              printf "file is not executable %s\n" "$path" >&2
+              return 1
+            elif [ -z "$executable" ] && [ -x "$path" ]; then
+              printf "file is executable %s\n" "$path" >&2
+              return 1
+            fi
+          }
+
+          __haraspkgs_check_ensure() {
+            if [ ! -f "$1" ]; then
+              printf "file is missing %s\n" "$1" >&2
+              return 1
+            fi
+          }
+
+          __haraspkgs_check_text() {
+            local path="$1" source="$2" executable="$3" formatter="$4" content
+
+            content="$(cat -- "$source" && printf x)" || return 1
+            __haraspkgs_check_content "$path" "''${content%x}" "$executable" "$formatter"
+          }
+
+          __haraspkgs_check_partial() {
+            local path="$1" source="$2" executable="$3" formatter="$4" kind="$5" content
+
+            content="$(cat -- "$source" && printf x)" || return 1
+            __haraspkgs_merge_partial "$path" "''${content%x}" "$kind" || return 1
+            __haraspkgs_check_content "$path" "$__haraspkgs_merged" "$executable" "$formatter"
+          }
+        '';
+
+        # The expected text goes through a store file so the script that embeds
+        # the check does not have to contain, and shellcheck, every file's text.
+        checkCall =
+          file:
+          let
+            expected = pkgs.writeText "expected" (fileText (fileContent file));
+            checker =
+              if file.partial != null then
+                "__haraspkgs_check_partial"
+              else if file.text != null then
+                "__haraspkgs_check_text"
+              else
+                "__haraspkgs_check_ensure";
+            arguments =
+              if file.partial == null && file.text == null then
+                [ file.path ]
+              else
+                [
+                  file.path
+                  (builtins.toString expected)
+                  (lib.optionalString file.executable "1")
+                  (formatterFor file)
+                ]
+                ++ lib.optional (file.partial != null) (partialKind file);
+          in
+          builtins.concatStringsSep " " ([ checker ] ++ builtins.map lib.escapeShellArg arguments)
+          + " || status=1";
+
+        checkCalls = builtins.concatStringsSep "\n" (builtins.map checkCall checkedFiles);
 
         linkFunction = ''
           __haraspkgs_link_file() {
@@ -162,7 +359,28 @@
                   source = lib.mkOption {
                     type = lib.types.nullOr lib.types.path;
                     default = null;
-                    description = "Source file that will be linked to `${name}`.";
+                    description = "Source file that will be linked to `${name}`, or merged into it when `partial` is set.";
+                  };
+
+                  partial = lib.mkOption {
+                    type = lib.types.nullOr (
+                      lib.types.attrTag (
+                        lib.genAttrs partialKinds (
+                          kind:
+                          lib.mkOption {
+                            type = lib.types.bool;
+                            description = "Treat the file at `${name}` as ${kind} and merge `text` or `source` into it.";
+                          }
+                        )
+                      )
+                    );
+                    default = null;
+                    description = ''
+                      Merge `text` or `source` into the existing file at `${name}` instead of
+                      owning it. The tag picks the format: `text` appends the text when it is
+                      missing, and `json`, `toml` and `yaml` merge recursively with the declared
+                      values winning and lists replaced. Needs exactly one of `text` and `source`.
+                    '';
                   };
 
                   format = lib.mkOption {
@@ -179,8 +397,8 @@
 
                   ignore = lib.mkOption {
                     type = lib.types.bool;
-                    default = config.source != null;
-                    defaultText = lib.literalExpression "config.source != null";
+                    default = config.source != null && config.partial == null;
+                    defaultText = lib.literalExpression "config.source != null && config.partial == null";
                     description = "Whether to add the file to the generated .gitignore.";
                   };
                 };
@@ -193,7 +411,7 @@
           {
             file.".gitignore".text = lib.mkIf (ignoreText != "") (lib.mkBefore ignoreText);
 
-            packages = builtins.map ({ package, ... }: package) linkFiles;
+            packages = builtins.map ({ package, ... }: package) linkFiles ++ lib.optional needsYq pkgs.yq-go;
 
             shellHook = lib.mkBefore (
               lib.optional (linkCalls != "") {
@@ -209,7 +427,10 @@
                 text = ''
                   ${writeFunctions}
                   ${writeCalls}
-                  unset -f __haraspkgs_write_file __haraspkgs_ensure_file
+                  unset -f __haraspkgs_write_file __haraspkgs_ensure_file \
+                    __haraspkgs_merge_partial __haraspkgs_write_partial \
+                    __haraspkgs_format_content
+                  unset __haraspkgs_merged __haraspkgs_formatted
                 '';
               }
             );
@@ -217,6 +438,26 @@
           (lib.optionalAttrs (options ? format) {
             format.excludes = unformattedPaths;
           })
+          # The condition must not read `enable`: its default forces the text,
+          # which can be an IFD that must not be realized while listing checks.
+          (lib.mkIf (files != [ ]) (
+            lib.optionalAttrs (options ? check) {
+              check.checks.file = {
+                packages = lib.optional needsYq pkgs.yq-go;
+                commands = [
+                  {
+                    header = "generated files";
+                    text = ''
+                      ${checkFunction}
+                      status=0
+                      ${checkCalls}
+                      test "$status" -eq 0
+                    '';
+                  }
+                ];
+              };
+            }
+          ))
         ];
       };
   };

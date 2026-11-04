@@ -39,6 +39,10 @@
     {
       inherit local;
 
+      # Wrappers bind the directory this variable names into their private
+      # /tmp, so a caller can share scratch files with the tool it wraps.
+      scratchVariable = "HARASPKGS_TMPDIR";
+
       network = local ++ [
         "--share-net"
         "--ro-bind-try"
