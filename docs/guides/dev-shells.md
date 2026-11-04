@@ -13,6 +13,7 @@ This page is the overview. The individual modules have their own guides:
 - [Scan for secrets](dev/gitleaks.md)
 - [Configure languages](dev/languages.md)
 - [Configure EditorConfig](dev/editorconfig.md)
+- [Configure direnv](dev/direnv.md)
 - [Generate a license](dev/license.md)
 - [Configure a code of conduct](dev/code-of-conduct.md)
 - [Configure checks](dev/check.md)

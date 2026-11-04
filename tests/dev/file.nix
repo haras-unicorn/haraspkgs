@@ -29,4 +29,30 @@
       ];
     };
   };
+
+  self.devTests.file-unchanged = {
+    flake = true;
+    value = {
+      modules = [
+        (
+          { lib, ... }:
+          {
+            file.".test/current.txt".text = "current";
+            file.".test/changed.txt".text = "new";
+            shellHook = lib.mkOrder 100 ''
+              mkdir -p .test
+              printf 'current\n' > .test/current.txt
+              printf 'old\n' > .test/changed.txt
+              touch -d @946684800 .test/current.txt .test/changed.txt
+            '';
+          }
+        )
+      ];
+      commands = [
+        ''test "$(stat -c %Y .test/current.txt)" = 946684800''
+        ''test "$(cat .test/changed.txt)" = new''
+        ''test "$(stat -c %Y .test/changed.txt)" != 946684800''
+      ];
+    };
+  };
 }

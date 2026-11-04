@@ -22,11 +22,13 @@ check mode; treefmt detects whether the formatter changed anything.
 ## Generated files
 
 Some files are not edited by hand: workflows, code of conduct files, licenses,
-and other module-owned text. The `file` module writes them raw; entries with
-`format = true` are formatted at shell entry by the same treefmt configuration,
-so the committed files are formatter-clean without building a formatter during
-evaluation. Set `format = false` to keep exact text (the license and git files
-do).
+and other module-owned text. Entries with `format = true` are formatted in
+memory at shell entry by the same treefmt configuration (`treefmt --stdin`), and
+the `file` module writes them only when the result differs from the file on
+disk. The committed files are formatter-clean without building a formatter
+during evaluation. Set `format = false` to keep exact text (the license and git
+files do); those paths go into `format.excludes`, so `dev format` does not
+reformat them either.
 
 ## Formatter selection
 

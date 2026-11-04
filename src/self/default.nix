@@ -37,9 +37,11 @@
             "autologin"
             "chdir"
             "cmdline"
+            "elif"
             "esac"
             "gcroots"
             "journalctl"
+            "readlink"
             "shellcheck"
             "shfmt"
             "shlex"
@@ -112,6 +114,7 @@
             "deadnix"
             "Diátaxis"
             "direnv"
+            "dotenv"
             "downloaders"
             "dont"
             "envrc"
@@ -382,6 +385,11 @@
           '';
         };
 
+        direnv = {
+          enable = true;
+          extra = "dotenv_if_exists .env";
+        };
+
         editorconfig = {
           enable = true;
           settings."*" = {
@@ -630,7 +638,15 @@
               pkgs.fd
               pkgs.nil
             ];
-            commands = "fd --glob '*.nix' . -0 | xargs -0 -r nil diagnostics";
+            commands = ''
+              status=0
+              output="$(fd --glob '*.nix' . -0 | xargs -0 -r nil diagnostics 2>&1)" || status=$?
+              if [ -n "$output" ]; then
+                printf '%s\n' "$output" >&2
+                status=1
+              fi
+              test "$status" -eq 0
+            '';
           };
         };
 

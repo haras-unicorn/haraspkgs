@@ -69,6 +69,7 @@ shell only needs to add its own overrides:
 - [Gitleaks module](dev/gitleaks.md)
 - [Language registry module](dev/languages.md)
 - [EditorConfig module](dev/editorconfig.md)
+- [Direnv module](dev/direnv.md)
 - [License module](dev/license.md)
 - [Code of conduct module](dev/code-of-conduct.md)
 - [Check module](dev/check.md)

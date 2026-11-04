@@ -200,11 +200,25 @@ let
       ...
     }@attrs:
     let
-      args = builtins.removeAttrs attrs [
-        "modules"
-        "flake-parts"
-        "import-tree"
-      ];
+      flatModules = lib.flatten (if builtins.isList modules then modules else [ modules ]);
+
+      # builtins.isPath is false for strings such as "${self}/src"
+      modulePaths = builtins.filter (
+        module: builtins.isPath module || builtins.isString module
+      ) flatModules;
+
+      args =
+        lib.recursiveUpdate
+          {
+            specialArgs = { inherit modulePaths; };
+          }
+          (
+            builtins.removeAttrs attrs [
+              "modules"
+              "flake-parts"
+              "import-tree"
+            ]
+          );
 
       expandModule =
         module:
@@ -215,9 +229,7 @@ let
         else
           [ module ];
 
-      expandedModules = builtins.concatMap expandModule (
-        lib.flatten (if builtins.isList modules then modules else [ modules ])
-      );
+      expandedModules = builtins.concatMap expandModule flatModules;
 
       selfModules =
         (flake-parts.lib.mkFlake

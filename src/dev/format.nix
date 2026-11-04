@@ -14,6 +14,7 @@
         formatters = lib.filterAttrs (_: formatter: formatter.enable) config.format.formatters;
 
         treefmtConfig = (pkgs.formats.toml { }).generate "haraspkgs-treefmt.toml" {
+          global.excludes = config.format.excludes;
           formatter = lib.mapAttrs (_: formatter: {
             command = formatter.command;
             options = formatter.options;
@@ -59,6 +60,12 @@
             type = lib.types.listOf lib.types.package;
             default = [ ];
             description = "Additional packages available to the formatter.";
+          };
+
+          excludes = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            description = "Globs excluded from every formatter.";
           };
 
           command = lib.mkOption {

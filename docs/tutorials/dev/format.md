@@ -46,9 +46,9 @@ nix flake check
 taken from the `default` dev shell. `dev format` runs the same treefmt
 configuration directly when you want immediate output.
 
-Generated files are formatted when the shell starts. Set `format = false` on a
-file entry to keep exact text, and pass formatter configs as store paths instead
-of committing them.
+Generated files are formatted when the shell starts, and only rewritten when the
+result differs. Set `format = false` on a file entry to keep exact text, and
+pass formatter configs as store paths instead of committing them.
 
 Next, read [how to configure formatting](../../guides/dev/format.md) and the
 [format reference](../../reference/dev/format.md).

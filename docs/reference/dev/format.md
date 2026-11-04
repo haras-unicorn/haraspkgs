@@ -12,6 +12,7 @@ and a format check.
 | ----------------------------------- | --------------- | -------------- | ----------------------------------------- |
 | `format.treefmtPackage`             | package         | `pkgs.treefmt` | treefmt used by the formatter and check.  |
 | `format.packages`                   | list of package | `[]`           | Additional packages available to treefmt. |
+| `format.excludes`                   | list of strings | `[]`           | Globs excluded from every formatter.      |
 | `format.formatters.<name>.enable`   | bool            | `true`         | Whether treefmt runs this formatter.      |
 | `format.formatters.<name>.packages` | list of package | `[]`           | Runtime packages for this formatter.      |
 | `format.formatters.<name>.command`  | string          | required       | Formatter executable.                     |
@@ -33,9 +34,11 @@ actions.
 
 The format check copies `self.outPath`; the formatter works in the checkout.
 
-The `file` module uses the generated treefmt command to format generated files
-from its shell hook. Formatting is therefore a runtime step; evaluation does not
-build a formatter. Set `format = false` on a file entry to write the exact text.
+The `file` module uses the generated treefmt command to format generated text in
+memory from its shell hook, with `treefmt --stdin`. Formatting is therefore a
+runtime step; evaluation does not build a formatter. Set `format = false` on a
+file entry to write the exact text; the file module then adds the path to
+`format.excludes` so tree-wide formatting leaves it alone.
 
 Formatter configuration files are passed as store paths, not committed
 repository files. The self shell supplies Prettier, Markdownlint, and

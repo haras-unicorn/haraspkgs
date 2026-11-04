@@ -152,6 +152,60 @@
       '';
     };
 
+    test-repository-paths-path-values = {
+      expr = selfLib.dev.repositoryPaths (builtins.toString ../..) [
+        ../../src
+        ../../tests
+        ../../flake.nix
+      ];
+      expected = {
+        dirs = [
+          "src"
+          "tests"
+        ];
+        files = [ "flake.nix" ];
+      };
+    };
+
+    test-repository-paths-string-values = {
+      expr =
+        let
+          root = builtins.toString ../..;
+        in
+        selfLib.dev.repositoryPaths root [
+          "${root}/src"
+          "${root}/flake.nix"
+        ];
+      expected = {
+        dirs = [ "src" ];
+        files = [ "flake.nix" ];
+      };
+    };
+
+    test-repository-paths-ignores-outside = {
+      expr = selfLib.dev.repositoryPaths (builtins.toString ../..) [
+        "/elsewhere/src"
+        "relative/src"
+      ];
+      expected = {
+        dirs = [ ];
+        files = [ ];
+      };
+    };
+
+    test-repository-paths-discards-context = {
+      expr =
+        let
+          root = builtins.toString ../..;
+          marker = builtins.toFile "repository-paths-context" "context";
+          contextual = builtins.appendContext "${root}/src" {
+            ${builtins.unsafeDiscardStringContext marker}.path = true;
+          };
+        in
+        builtins.any builtins.hasContext (selfLib.dev.repositoryPaths root [ contextual ]).dirs;
+      expected = false;
+    };
+
     test-concat-commands-filtered-invalid = {
       expr = selfLib.dev.concatCommands [
         ""
