@@ -16,9 +16,29 @@ up-to-date files untouched: no deleted files, no new modification times.
 
 When the `format` module has enabled formatters, the content first goes through
 `treefmt --stdin` and is held in memory, so formatting never writes to the
-checkout. `format = false` skips that step and keeps the exact text. Symlinks
-are replaced only when they point somewhere else, and `ensure` files are created
-only when missing.
+checkout. The temporary copy treefmt makes of the text goes in a per-run
+directory under `$TMPDIR/haraspkgs`, which is removed right after the formatter
+returns. Wrapped formatters run in a bubblewrap sandbox with a private `/tmp`,
+where that copy would be invisible. So the module exports the directory as
+`HARASPKGS_TMPDIR`, and every wrapper binds it into its sandbox at the same
+path. Only that run's directory is shared. `format = false` skips that step and
+keeps the exact text. Symlinks are replaced only when they point somewhere else,
+and `ensure` files are created only when missing.
+
+## Owning a file or sharing it
+
+A `text` file belongs to the module: the hook rewrites it whenever it differs. A
+file such as `Cargo.toml` is shared with a person, so rewriting it would throw
+away their edits. `partial` is the third way. The file stays hand-written, and
+the module only guarantees that the declared text or values are in it.
+
+The merge is delegated to `yq` instead of being hand-rolled, so the module
+inherits its behavior and documents that choice. The hook merges and formats the
+file in memory and writes it only when the result differs. The `file` check runs
+the same merge and format functions and compares the result with the file, so
+the hook and the check cannot disagree about what "generated" means. It covers
+every tracked generated file, because committed copies are mirrors of what the
+shell writes, and a stale mirror should fail CI.
 
 ## Tree-wide formatting
 

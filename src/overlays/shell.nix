@@ -258,8 +258,14 @@
                 else
                   ${stageSetup}
                   ${homePrepareLines}
+                  scratch="''${${selfLib.bwrap.scratchVariable}:-}"
+                  scratchArguments=()
+                  if [ -n "$scratch" ]; then
+                    scratchArguments=(--bind "$scratch" "$scratch")
+                  fi
                   bwrap \
                     ${bwrapArgumentString} \
+                    "''${scratchArguments[@]}" \
                     ${commandWithStdin}
                 fi
               '';
