@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.2.1...v1.3.0) (2026-11-04)
+
+
+### Features
+
+* partial file writes ([#22](https://github.com/haras-unicorn/haraspkgs/issues/22)) ([0cf65a6](https://github.com/haras-unicorn/haraspkgs/commit/0cf65a640910f8ca0fd5158c48118a1dd54dd21b))
+
+
+### Bug Fixes
+
+* no write on shell hook ([#20](https://github.com/haras-unicorn/haraspkgs/issues/20)) ([537f010](https://github.com/haras-unicorn/haraspkgs/commit/537f01020f5ddd160c42ea1284ed4cc6e0b8b45d))
+
 ## [1.2.1](https://github.com/haras-unicorn/haraspkgs/compare/v1.2.0...v1.2.1) (2026-10-30)
 
 
