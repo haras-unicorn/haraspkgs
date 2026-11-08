@@ -46,6 +46,7 @@
 - [Configure CUDA](guides/cuda.md)
 - [Add a NixOS test](guides/nixos-tests.md)
 - [Run a live container](guides/containers.md)
+- [Run containers in checks](guides/podman.md)
 - [Run a benchmark](guides/benchmarks.md)
 
 # Reference
@@ -74,6 +75,7 @@
 - [CUDA helpers](reference/cuda.md)
 - [NixOS tests](reference/nixos-tests.md)
 - [Live containers](reference/containers.md)
+- [Podman in builds](reference/podman.md)
 - [Benchmarks](reference/benchmarks.md)
 
 # Explanation

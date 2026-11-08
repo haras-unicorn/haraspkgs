@@ -176,6 +176,29 @@ Common Nix library and packages I use across my repositories.
   `flake = true` tests.
 - **The flake-root overlay is this-flake only.** Keep it in
   `src/packages/flake-root.nix`.
+- **Containers in builds come from the `podman` overlay.** It lives in
+  `src/overlays/podman/` (`default.nix` plus the shared `sandbox.bash`) and
+  exposes `makePodmanScript` (a `writeShellApplication` wrapper) and
+  `withPodman` (a derivation wrapper that adds a setup hook through
+  `nativeBuildInputs`). Both start a rootful podman daemon only when
+  `NIX_BUILD_TOP` and `NIX_LOG_FD` are set, so outside a Nix build they do
+  nothing and the wrapped command fails on its own without docker or podman.
+  Builds need `requiredSystemFeatures = [ "uid-range" ]`, which in turn needs
+  `auto-allocate-uids`; `withPodman` sets the feature and `makePodmanScript`
+  fails with a message naming it when it runs as a non-root user inside a build.
+  CUDA is on by default when `pkgs.config.cudaSupport` is set and generates the
+  CDI spec inside the build.
+- **GitHub runners always get KVM and unprivileged user namespaces.** The
+  `workflows` module renders two runner steps (`Enable KVM` and
+  `Allow unprivileged user namespaces`) right after the Cachix step of every
+  workflow with `installNix` on. They are guarded for Linux runners, have no
+  options, and the default `installNixExtraConfig` enables `auto-allocate-uids`
+  and `cgroups`.
+- **Podman checks live in `tests/podman.nix`.** They cover the script and hook
+  helpers (with testcontainers and two postgres containers), running outside a
+  build, and a build without `uid-range`. The CUDA check builds everywhere and
+  skips itself when the build has no `/dev/nvidiactl`, so CI, which has no GPU,
+  does not fail on it.
 
 ## Documentation
 

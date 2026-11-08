@@ -17,7 +17,12 @@ The drift check repeats the Prettier step inside its build.
 `installable` is a plain string with a default of `".#<name>"`. A downstream
 flake can keep the default, point it at another package, or set it to `null` and
 provide `steps` instead. The base steps stay the same: checkout, Nix, Cachix,
-and the installable build.
+the runner steps, and the installable build.
+
+The runner steps are not options because every repository built on haraspkgs
+wants them: a runner that can use KVM and unprivileged user namespaces makes VM
+tests fast and lets builds run containers, and the steps cost seconds. They sit
+before the installable build so that build can already use them.
 
 ## Drift
 

@@ -9,6 +9,8 @@
         enable = true;
         presets.nvidia-gpu.enable = true;
       };
+
+      hardware.nvidia-container-toolkit.enable = lib.mkIf pkgs.config.cudaSupport true;
     };
 
     testModule = {
