@@ -167,6 +167,42 @@ namespace. `evaluateDevShellAttrs` turns dev shell modules into `mkShell`
 derivations. `makeDevTest` wraps that evaluator into a test derivation; it is
 used by the declarative [`self.devTests`](dev-tests.md) API.
 
+## Mustache helpers
+
+The `mustache` overlay renders a template with
+[`mustache-go`](https://github.com/cbroglie/mustache), so a long script can sit
+in its own file next to the module that uses it:
+
+```nix
+pkgs.harasPackages.renderMustache {
+  name = "deploy.sh";
+  text = builtins.readFile ./deploy.sh;
+  vars = {
+    host = "example.org";
+    ports = [ 80 443 ];
+  };
+}
+```
+
+<!-- markdownlint-disable MD013 -->
+
+| Argument | Type   | Default  | Description                                          |
+| -------- | ------ | -------- | ---------------------------------------------------- |
+| `name`   | string | required | Name of the rendered file in the store.              |
+| `text`   | string | required | Mustache template.                                   |
+| `vars`   | attrs  | `{}`     | Data for the template, passed to `mustache` as JSON. |
+
+<!-- markdownlint-enable MD013 -->
+
+- `renderMustache` returns a derivation: a store file with the rendered text.
+  Use it as `source ${rendered}` or as an input to another derivation.
+- `renderMustacheText` takes the same arguments and returns the rendered text as
+  a string, by reading the result of `renderMustache` with `builtins.readFile`.
+  This is import-from-derivation: evaluation waits for the render to build, so
+  prefer `renderMustache` unless you need the text during evaluation.
+
+A variable that the template uses but `vars` lacks fails the build.
+
 ## Helpers
 
 The pure graph helpers live under `self.lib.overlays`:
