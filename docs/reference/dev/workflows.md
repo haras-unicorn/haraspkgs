@@ -27,10 +27,16 @@ included in the default group. It renders GitHub Actions workflows into
 
 ## Behavior
 
-The base steps are checkout, Nix, Cachix, and
-`nix build --show-trace <installable>`. Extra `steps` are appended. The workflow
-is rendered with `lib.generators.toYAML` and written by the `file` module, which
-formats it at shell entry.
+The base steps are checkout, Nix, Cachix, two runner steps, and
+`nix build --show-trace <installable>`. Extra `steps` are appended.
+
+The runner steps run only when `installNix` is on and only on Linux runners.
+They write a udev rule that makes `/dev/kvm` accessible to every user, and set
+`kernel.apparmor_restrict_unprivileged_userns=0` where that setting exists. The
+`installNixExtraConfig` option defaults to the experimental features and
+settings that `uid-range` builds need. The workflow is rendered with
+`lib.generators.toYAML` and written by the `file` module, which formats it at
+shell entry.
 
 When a workflow is declared, the module also exposes a `workflows` passthru
 check. It compares each committed `.github/workflows/<name>.yaml` file with the

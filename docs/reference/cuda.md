@@ -13,7 +13,8 @@ CUDA support comes from nixpkgs and the downstream package policy:
 
 ## `hostModule`
 
-Applies `programs.nix-required-mounts` when the package set has
+Applies `programs.nix-required-mounts` and enables
+`hardware.nvidia-container-toolkit` when the package set has
 `cudaSupport = true`. Use it on the host that runs GPU containers.
 
 ## `testModule`

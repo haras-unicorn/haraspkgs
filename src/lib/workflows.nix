@@ -27,6 +27,30 @@
           };
         };
 
+        # Builds that need uid-range run VMs and containers, which need these
+        # two settings on the runner. The user namespace setting only exists
+        # on runners with the Ubuntu AppArmor restriction.
+        runnerSteps = lib.optionals (workflow.installNix or true) [
+          {
+            name = "Enable KVM";
+            "if" = "runner.os == 'Linux'";
+            run = ''
+              echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+              sudo udevadm control --reload-rules
+              sudo udevadm trigger --name-match=kvm
+            '';
+          }
+          {
+            name = "Allow unprivileged user namespaces";
+            "if" = "runner.os == 'Linux'";
+            run = ''
+              if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+                sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+              fi
+            '';
+          }
+        ];
+
         installableStep = lib.optional (installable != null) {
           run = "nix build --show-trace ${installable}";
         };
@@ -39,6 +63,7 @@
         ]
         ++ installNixStep
         ++ cachixStep
+        ++ runnerSteps
         ++ installableStep
         ++ (workflow.steps or [ ]);
 

@@ -29,8 +29,13 @@ generated copy.
 }
 ```
 
-The base steps install Nix, configure Cachix, and run
+The base steps install Nix, configure Cachix, prepare the runner, and run
 `nix build --show-trace .#docs`. `steps` are appended after them.
+
+Preparing the runner enables KVM and unprivileged user namespaces on Linux
+runners, and `installNixExtraConfig` turns on `auto-allocate-uids`. VM tests and
+[containers in checks](../podman.md) need them. The steps are skipped when
+`installNix = false` and on runners that are not Linux.
 
 ## Use a matrix
 

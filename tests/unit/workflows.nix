@@ -90,6 +90,38 @@
       expected = true;
     };
 
+    test-render-runner-steps = {
+      expr =
+        let
+          yaml = selfLib.workflows.render "check" {
+            installable = ".#check";
+            cachix.name = "haras";
+          };
+          position = needle: builtins.head (lib.splitString needle yaml);
+          before =
+            first: second: builtins.stringLength (position first) < builtins.stringLength (position second);
+        in
+        lib.hasInfix "99-kvm4all.rules" yaml
+        && lib.hasInfix "apparmor_restrict_unprivileged_userns=0" yaml
+        && lib.hasInfix "runner.os == 'Linux'" yaml
+        && before "cachix-action" "99-kvm4all.rules"
+        && before "apparmor_restrict_unprivileged_userns=0" "nix build";
+      expected = true;
+    };
+
+    test-render-without-nix-has-no-runner-steps = {
+      expr =
+        let
+          yaml = selfLib.workflows.render "release" {
+            installable = null;
+            installNix = false;
+            cachix = null;
+          };
+        in
+        !(lib.hasInfix "kvm" yaml) && !(lib.hasInfix "apparmor" yaml);
+      expected = true;
+    };
+
     test-render-extra-jobs = {
       expr =
         let
