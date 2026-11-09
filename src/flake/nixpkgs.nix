@@ -41,7 +41,7 @@
                   config.self.lib.overlays.nixpkgs
                 ]
                 ++ cfg.overlays
-                ++ (selfLib.nixpkgs.makeExtraOverlays cfg.config);
+                ++ selfLib.nixpkgs.extraOverlays;
 
                 makePkgs =
                   let

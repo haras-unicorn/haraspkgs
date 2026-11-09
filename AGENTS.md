@@ -196,9 +196,20 @@ Common Nix library and packages I use across my repositories.
   and `cgroups`.
 - **Podman checks live in `tests/podman.nix`.** They cover the script and hook
   helpers (with testcontainers and two postgres containers), running outside a
-  build, and a build without `uid-range`. The CUDA check builds everywhere and
-  skips itself when the build has no `/dev/nvidiactl`, so CI, which has no GPU,
-  does not fail on it.
+  build, and a build without `uid-range`.
+- **GPU tests are packages, not checks.** `tests/cuda.nix` exposes
+  `packages.<system>.cuda-sandbox-test`, `cuda-container-test` (podman in the
+  build) and `cuda-nixos-test` (a NixOS test with a container), which require
+  the `cuda` and `nvidia-gpu` system features. They are built from a separate
+  package set with `cudaSupport` and `allowUnfree`, so `nix flake check` on CI,
+  which has no GPU, never builds them and the main package set stays without
+  CUDA. `dev test-cuda` (in `src/self/`) builds them on a machine that has a
+  GPU. The test-driver GPU patch is an always-on overlay in
+  `selfLib.nixpkgs.extraOverlays` that reads `cudaSupport` from `final`, with
+  the condition in the attribute value because the names of an overlay cannot
+  depend on `final.config`. The guest module sets `nixpkgs.config` unless
+  `options.nixpkgs.pkgs.isDefined`, i.e. a read-only package set, and it starts
+  no service: `cuda-nixos-test` defines its own `cuda-check`.
 
 ## Documentation
 

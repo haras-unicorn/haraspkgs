@@ -217,8 +217,10 @@
             "unsets"
             "apparmor"
             "cgroup"
+            "cdi"
             "cgroups"
             "crun"
+            "ctk"
             "initdb"
             "kvm"
             "ldconfig"
@@ -571,6 +573,15 @@
             description = "Build the documentation.";
             packages = [ pkgs.nix ];
             commands = ''nix build ".#docs" --no-link --print-out-paths'';
+          };
+
+          test-cuda = {
+            description = "Run the CUDA tests, which need a GPU.";
+            packages = [ pkgs.nix ];
+            commands = ''
+              nix build --no-link --print-build-logs \
+                ".#cuda-sandbox-test" ".#cuda-container-test" ".#cuda-nixos-test"
+            '';
           };
 
           check-links = {
