@@ -66,6 +66,11 @@ startPodmanSandbox() {
   # to resolve localhost with.
   export TESTCONTAINERS_RYUK_DISABLED=true
   export TESTCONTAINERS_HOST_OVERRIDE=127.0.0.1
+
+  local image
+  for image in ${PODMAN_SANDBOX_IMAGES:-}; do
+    podman --remote load --input "$image" > /dev/null
+  done
 }
 
 stopPodmanSandbox() {

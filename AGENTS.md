@@ -197,8 +197,23 @@ Common Nix library and packages I use across my repositories.
   options, and the default `installNixExtraConfig` enables `auto-allocate-uids`
   and `cgroups`.
 - **Podman checks live in `tests/podman.nix`.** They cover the script and hook
-  helpers (with testcontainers and two postgres containers), running outside a
-  build, and a build without `uid-range`.
+  helpers (the hook one runs two official postgres containers through
+  testcontainers), running outside a build, and a build without `uid-range`.
+- **Container images are exported packages, pinned and not repackaged.**
+  `src/packages/images/` holds one `images` overlay with `deps = [ "podman" ]`
+  that reads `images.json` (repository, tag, digest and one hash per
+  architecture) and builds an `image-<name>` package per entry. The digests and
+  hashes come from `nix-prefetch-docker`; an entry without them throws when it
+  is built. Each package is a `makePodmanImage` (a `dockerTools.pullImage` of
+  the official image) and so gets the setuid and setgid bits cleared, because
+  the Nix build sandbox does not let the daemon create files with them. The
+  image keeps the name it has on a daemon that pulled it (for example
+  `docker.io/library/postgres:18`), so stock testcontainers modules find it
+  without pulling. Other repositories get `pkgs.<namespace>.image-<name>` and
+  `packages.<system>.image-<name>`; they list images in `images` or
+  `podmanImages`. `tests/images.nix` checks every `image-*` package by loading
+  it and exporting a container, so a new image needs no test code. Orchestrating
+  several containers (clusters) is left to downstream flakes.
 - **GPU tests are packages, not checks.** `tests/cuda.nix` exposes
   `packages.<system>.cuda-sandbox-test`, `cuda-container-test` (podman in the
   build) and `cuda-nixos-test` (a NixOS test with a container), which require

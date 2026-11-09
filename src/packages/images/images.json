@@ -1,0 +1,164 @@
+{
+  "postgresql-18": {
+    "repository": "docker.io/library/postgres",
+    "tag": "18",
+    "digest": "sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42",
+    "hashes": {
+      "amd64": "sha256-urbTbVn7DahgASPn4D+fbdwSyglajc9eagThYw0miYA=",
+      "arm64": "sha256-yzTumj+PGdYUXTMYXydR8rvmVI8nTQi3C5tdjORKIN4="
+    }
+  },
+  "mysql-8-4": {
+    "repository": "docker.io/library/mysql",
+    "tag": "8.4",
+    "digest": "sha256:a81d043930e51745522bd5c430961cf8286f0a23f0a9a2a6e0108f7ea71b0902",
+    "hashes": {
+      "amd64": "sha256-tCUwlYfn7AulDtEd3NOaLHV/AQOkNisxwWSP1GmA2R4=",
+      "arm64": "sha256-bvqK9o9A7bV7Z/DOx1pgupX75g30bXRAEskvkTuv+s8="
+    }
+  },
+  "mariadb-11": {
+    "repository": "docker.io/library/mariadb",
+    "tag": "11",
+    "digest": "sha256:c4124d1afa875e47f2892edf26b482fa54f796e2f342d3717a04ca091a22a9bd",
+    "hashes": {
+      "amd64": "sha256-5RjEfY9WrXxFesURCKPhsTSNm5KJurb17nKmOkrSqQY=",
+      "arm64": "sha256-u1NamRDGFJeVJmxxV5iq33hPA6pEIBhUu1MBaJJXCA4="
+    }
+  },
+  "rqlite-10": {
+    "repository": "docker.io/rqlite/rqlite",
+    "tag": "10.6.6",
+    "digest": "sha256:e98baaf915dcbb0abb43f6ef0c1ba7c1dc35efb3d0e63ecd42f313f7fecb7f0d",
+    "hashes": {
+      "amd64": "sha256-AFLu4IENXiY9fQjED4JfHBtE7fyDOwDrUkk7dUxcn8M=",
+      "arm64": "sha256-C1m9iZPo0ui4TN5AVPa/gvfJGy5p3glTGECnDSiOq84="
+    }
+  },
+  "vitess-lite-24": {
+    "repository": "docker.io/vitess/lite",
+    "tag": "v24.0.5",
+    "digest": "sha256:8cfdeff8f56368d87a4e7ca4436b8d30ab53bfd5f7c1c796f803296dce18d5f3",
+    "hashes": {
+      "amd64": "sha256-r2dpLYOm5gzq4YpVfEKquI3x7ZSuyS84WNY/nC7P0zY=",
+      "arm64": "sha256-r2dpLYOm5gzq4YpVfEKquI3x7ZSuyS84WNY/nC7P0zY="
+    }
+  },
+  "etcd-3-7": {
+    "repository": "quay.io/coreos/etcd",
+    "tag": "v3.7.3",
+    "digest": "sha256:8d1b6c24f08e12ed7623d1df421832b3cafabe221aa6b658b97288d07807582f",
+    "hashes": {
+      "amd64": "sha256-NIfoZ9CR/Gtq/21uz/3WXstloxzgbrDEUVv6BNFD6GM=",
+      "arm64": "sha256-5L42ubPvqHRI+EdQZgIJ2HBcTcsUkpTGAUbDqJcSSy8="
+    }
+  },
+  "haproxy-3-2": {
+    "repository": "docker.io/library/haproxy",
+    "tag": "3.2",
+    "digest": "sha256:1242e4006ac3f1ed15871efadca3d8d089e76f720017a1c51747133ee40cc953",
+    "hashes": {
+      "amd64": "sha256-NULPYEGH+ZKlSX/VbDTcXO8Axrm164FeWFKkywLFddo=",
+      "arm64": "sha256-jU5iqcmAEUMT2iYyggrtc+1ICEo8v1Y4MlJhnsOnSZs="
+    }
+  },
+  "nginx-1-28": {
+    "repository": "docker.io/library/nginx",
+    "tag": "1.28",
+    "digest": "sha256:146adea4768b83c607d0bdfa4188464e3da6e0a3ad4475db1d1d8f64f27c29cc",
+    "hashes": {
+      "amd64": "sha256-T2GTfv1KkqwrZlvS50ZGHUkTxBY347Ndwjz+kQ2xqnc=",
+      "arm64": "sha256-AegQx8JcNVMUpcpJzeERXio50336vU3fE1K7Vvc2RoU="
+    }
+  },
+  "coredns-1-15": {
+    "repository": "docker.io/coredns/coredns",
+    "tag": "1.15.0",
+    "digest": "sha256:0a9d8c8ddf34347eb59aad9a8784f0710de88d6d112726d11d271f9bc6daca26",
+    "hashes": {
+      "amd64": "sha256-VgorHUi+sJG1zMN+pLjedYbG3owsv3J7IZSM4ggr1X8=",
+      "arm64": "sha256-m5PXpuRMn387JP38jxSFD/Xp7vBpnNMwfjh2UX9Ek38="
+    }
+  },
+  "valkey-9": {
+    "repository": "docker.io/valkey/valkey",
+    "tag": "9.1.3",
+    "digest": "sha256:3add1a336a920ea54770a001ab6feb3da5fceea96a40373a3a2cd469b815f0b7",
+    "hashes": {
+      "amd64": "sha256-n8qHNpWzojAB3+wT2k3Ne2/RqIVy56bJML3Cn6mpPZM=",
+      "arm64": "sha256-8HEOXHHBdyHuVXYZIemt1mzRGR0J+C7fRb7oK+Zs3CA="
+    }
+  },
+  "openbao-2": {
+    "repository": "docker.io/openbao/openbao",
+    "tag": "2.7.2",
+    "digest": "sha256:5046911075e137e154ce49ab051502f4ec7cf367d484ae4a4dce665d9b90561f",
+    "hashes": {
+      "amd64": "sha256-Yp/lzoReVgRzTRR1e/iZeAoVSw/5tKzsM1As3pQ1i8M=",
+      "arm64": "sha256-L08cbtAHlGh7ILybHsCbCCbq/OWqwmx0ltzGFq5BFrY="
+    }
+  },
+  "envoy-1-40": {
+    "repository": "docker.io/envoyproxy/envoy",
+    "tag": "v1.40.2",
+    "digest": "sha256:8de97e654644827d62afdbf7e1d3dc9fee01a8690d410dd1c63a30dc6b6cecbb",
+    "hashes": {
+      "amd64": "sha256-7fu5Qz5iNfgkWpWdWv/OGcitqqEn0daPjolfDwZEvns=",
+      "arm64": "sha256-DNX+4w4janTexw7ExIfYAcG9CVETlgDcjrxWpVQTdvk="
+    }
+  },
+  "rabbitmq-4": {
+    "repository": "docker.io/library/rabbitmq",
+    "tag": "4",
+    "digest": "sha256:485319d42170eab53d8a030e1cc49d95e41f5d325479fa504736db8091981eb7",
+    "hashes": {
+      "amd64": "sha256-E9oRwU/gho82I7iQoTYb+AhSlx//OxgR5wM/KyansaI=",
+      "arm64": "sha256-ACnmxt9WqZ2qq0VizblilTrQo0lxrbnwYpzVzVaCt2o="
+    }
+  },
+  "mailpit-1": {
+    "repository": "docker.io/axllent/mailpit",
+    "tag": "v1.33.1",
+    "digest": "sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce",
+    "hashes": {
+      "amd64": "sha256-Gw9QkcGOy/t7OzbKdQbj1LKawYhdW7DnMVk13G4QRwA=",
+      "arm64": "sha256-3kF+SojMJEC9qAOvYnb9mSNUm7PX7t5HyqtDLPeLCAA="
+    }
+  },
+  "keycloak-26": {
+    "repository": "quay.io/keycloak/keycloak",
+    "tag": "26.8.2",
+    "digest": "sha256:3879c623248408de29a5303178b5816c77e8dfef3890c361f8c0bbeaa979ba3b",
+    "hashes": {
+      "amd64": "sha256-6eSEzEUJ/OQOVhbJo8h5xLGSyxCOZLZvQe0cZPJw/Vs=",
+      "arm64": "sha256-louh38+6Nd1rKcSFrcPXQ2mdz/THMJSH+whmkLN86aM="
+    }
+  },
+  "authentik-2026": {
+    "repository": "ghcr.io/goauthentik/server",
+    "tag": "2026.8.5",
+    "digest": "sha256:602227a86455d6772e3d16b7d852713c4f864f40df5df894abd1285bb53979a5",
+    "hashes": {
+      "amd64": "sha256-GoBImCTaa8tmuKh6LPdxn1tSyVDH6ks0dosfEw3tURk=",
+      "arm64": "sha256-EwTlM6xTU+OyUzyXFKruOHvd7u+wPddqeTplVTycY9I="
+    }
+  },
+  "lldap-0-6": {
+    "repository": "docker.io/lldap/lldap",
+    "tag": "v0.6.3",
+    "digest": "sha256:2a8454b668c1aba7157e832eab0e242e1e7eb5fb7591d7e7774ba05286511ca8",
+    "hashes": {
+      "amd64": "sha256-Vip88n14105GBLvFlpwIbHuucIYCEUH2f5HsjXDqSi4=",
+      "arm64": "sha256-MUzQsSgqwL5s0OJzBzlDUeE5w6g7iTM4SlE8xQHMvcs="
+    }
+  },
+  "authelia-4": {
+    "repository": "docker.io/authelia/authelia",
+    "tag": "4.39.28",
+    "digest": "sha256:bd97cff4fcbf715b5ff1f9ae286afbe6033afce385302520b0368122d43a6f54",
+    "hashes": {
+      "amd64": "sha256-g9VBcJGGV5DSZm0BPgW1jQO6c/ENKUasD5RwHrPCcaM=",
+      "arm64": "sha256-YWzfS9QwR8Ylt24umGc5HqkjU348/SfeVlw2VMphRlk="
+    }
+  }
+}
