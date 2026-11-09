@@ -18,17 +18,26 @@
 
         modulePathsInRepository = selfLib.dev.repositoryPaths self.outPath modulePaths;
 
-        watchLines =
-          builtins.map (path: "watch_file ${lib.escapeShellArg path}") direnv.watch.files
-          ++ builtins.map (path: "watch_dir ${lib.escapeShellArg path}") direnv.watch.dirs;
+        fileWatchLines = builtins.map (path: "watch_file ${lib.escapeShellArg path}") direnv.watch.files;
 
-        # The watches come after `use flake` on purpose: direnv records their
-        # modification times (in whole seconds) when they are registered, and the
-        # shell hook run by `use flake` can modify watched directories. Recording
-        # before it would make every such load look like a change and reload
-        # forever.
+        dirWatchLines = builtins.map (path: "watch_dir ${lib.escapeShellArg path}") direnv.watch.dirs;
+
+        # The watches are registered twice. nix-direnv decides whether to
+        # rebuild the cached shell during `use flake`, from the watches
+        # registered earlier in that same run, because direnv clears the watches
+        # of the previous load before it evaluates `.envrc`. Without the first
+        # registration an edit reloads direnv and the stale cache is used.
+        #
+        # The second registration, after `use flake`, replaces the recorded
+        # times: direnv stores them in whole seconds when a watch is registered,
+        # and the shell hook run by `use flake` can modify watched directories.
+        # Keeping the times from before it would make every such load look like
+        # a change and reload forever.
+        watchLines = fileWatchLines ++ dirWatchLines;
+
         envrcText = lib.concatStringsSep "\n" (
           lib.optional (direnv.extra != "") direnv.extra
+          ++ watchLines
           ++ [ "use flake ${lib.escapeShellArgs direnv.useFlake}" ]
           ++ watchLines
         );
