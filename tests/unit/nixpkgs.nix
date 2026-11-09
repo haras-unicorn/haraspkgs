@@ -71,23 +71,33 @@ in
     };
 
     test-extra-overlays-off = {
-      expr = selfLib.nixpkgs.makeExtraOverlays { cudaSupport = false; };
-      expected = [ ];
+      expr = builtins.map (
+        overlay:
+        (overlay { config.cudaSupport = false; } { nixos-test-driver = "unpatched"; }).nixos-test-driver
+      ) selfLib.nixpkgs.extraOverlays;
+      expected = [ "unpatched" ];
+    };
+
+    test-extra-overlays-unset = {
+      expr = builtins.map (
+        overlay: (overlay { config = { }; } { nixos-test-driver = "unpatched"; }).nixos-test-driver
+      ) selfLib.nixpkgs.extraOverlays;
+      expected = [ "unpatched" ];
     };
 
     test-extra-overlays-on = {
-      expr =
-        let
-          overlays = selfLib.nixpkgs.makeExtraOverlays { cudaSupport = true; };
-        in
-        {
-          count = builtins.length overlays;
-          firstIsFunction = builtins.isFunction (builtins.head overlays);
-        };
-      expected = {
-        count = 1;
-        firstIsFunction = true;
-      };
+      expr = builtins.map (
+        overlay:
+        (overlay { config.cudaSupport = true; } {
+          nixos-test-driver.overrideAttrs = patch: (patch { } { patches = [ "existing" ]; }).patches;
+        }).nixos-test-driver
+      ) selfLib.nixpkgs.extraOverlays;
+      expected = [
+        [
+          "existing"
+          (./../../src/lib/nixpkgs/nixos-test-driver-gpu.patch)
+        ]
+      ];
     };
   };
 }

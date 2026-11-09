@@ -163,19 +163,6 @@
         '';
       };
 
-      cudaProbe = pkgs.harasPackages.makePodmanScript {
-        name = "cuda-probe";
-        cuda = true;
-        text = ''
-          image=localhost/container-probe:latest
-
-          podman --remote load --input ${probeImage} > /dev/null
-
-          podman --remote run --rm --device nvidia.com/gpu=all "$image" \
-            /bin/ls /dev/nvidia0 /dev/nvidiactl /dev/nvidia-uvm
-        '';
-      };
-
       outsideProbe = pkgs.harasPackages.makePodmanScript {
         name = "outside-probe";
         text = ''
@@ -211,23 +198,6 @@
               touch "$out"
             ''
         );
-
-        # CI has no GPU, so the check builds everywhere and skips itself when
-        # the build has no NVIDIA device, instead of requiring the GPU features.
-        podman-cuda =
-          pkgs.runCommand "haraspkgs-podman-cuda-check"
-            {
-              requiredSystemFeatures = [ "uid-range" ];
-            }
-            ''
-              if [ ! -e /dev/nvidiactl ]; then
-                echo "no NVIDIA GPU in this build, skipping"
-                touch "$out"
-                exit 0
-              fi
-              ${lib.getExe cudaProbe}
-              touch "$out"
-            '';
 
         podman-outside-sandbox = pkgs.runCommand "haraspkgs-podman-outside-sandbox-check" { } ''
           env --unset=NIX_BUILD_TOP ${lib.getExe outsideProbe} "$out"

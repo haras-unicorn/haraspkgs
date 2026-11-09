@@ -25,9 +25,13 @@ Adds the `cuda` and `nvidia-gpu` required features to a NixOS test.
 
 The guest module for containers and tests. It:
 
-- enables `cudaSupport` and `allowUnfree` in the guest;
-- starts the `cuda-check` oneshot service running `pkgs.cudaPackages.saxpy`;
+- enables `cudaSupport` and `allowUnfree` in the guest, unless the guest has a
+  read-only package set (`nixpkgs.pkgs` is defined, as in a test that sets
+  `node.pkgs`), which has to carry the config already;
 - adds the NVIDIA device bind mounts and `/run/opengl-driver`.
+
+It does not start any service. A test that wants to run `saxpy` defines its own,
+see [Use CUDA](../guides/cuda.md).
 
 The guest uses `/host/run/opengl-driver` inside the test driver and
 `/run/opengl-driver` on a live host.

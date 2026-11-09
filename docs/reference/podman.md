@@ -15,12 +15,13 @@ pkgs.harasPackages.makePodmanScript {
 
 <!-- markdownlint-disable MD013 -->
 
-| Argument        | Type            | Default | Description                                      |
-| --------------- | --------------- | ------- | ------------------------------------------------ |
-| `name`          | string          | none    | Name of the script.                              |
-| `text`          | string          | none    | Script body, run with the daemon available.      |
-| `runtimeInputs` | list of package | `[]`    | Extra commands on the script's `PATH`.           |
-| `startTimeout`  | integer         | `10`    | Seconds to wait for the daemon socket to appear. |
+| Argument        | Type            | Default                   | Description                                      |
+| --------------- | --------------- | ------------------------- | ------------------------------------------------ |
+| `name`          | string          | none                      | Name of the script.                              |
+| `text`          | string          | none                      | Script body, run with the daemon available.      |
+| `runtimeInputs` | list of package | `[]`                      | Extra commands on the script's `PATH`.           |
+| `startTimeout`  | integer         | `10`                      | Seconds to wait for the daemon socket to appear. |
+| `cuda`          | bool            | `pkgs.config.cudaSupport` | Generate a CDI spec for the GPU, see below.      |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -50,13 +51,17 @@ with a message naming the feature otherwise. Then they:
 1. write a storage and a containers configuration in a state directory under
    `NIX_BUILD_TOP`, with the overlay driver, the netavark bridge network and
    cgroups disabled;
-2. mount `cgroup2` on `/sys/fs/cgroup`, which is an empty directory in the
+2. when `cuda` is on and the build has `/dev/nvidiactl`, generate a CDI spec for
+   the GPU with `nvidia-ctk` into the state directory, so containers can ask for
+   `--device nvidia.com/gpu=all`. The spec of the host is not used, because its
+   hooks are store paths the build does not have;
+3. mount `cgroup2` on `/sys/fs/cgroup`, which is an empty directory in the
    sandbox and makes crun fail without the mount;
-3. mount a `tmpfs` on `/run` when it is not writable, which happens when
+4. mount a `tmpfs` on `/run` when it is not writable, which happens when
    required mounts such as the GPU ones create it;
-4. bring up the loopback interface and enable IPv4 forwarding;
-5. start `podman system service` with its own `HOME` and configuration;
-6. export the variables below.
+5. bring up the loopback interface and enable IPv4 forwarding;
+6. start `podman system service` with its own `HOME` and configuration;
+7. export the variables below.
 
 <!-- markdownlint-disable MD013 -->
 

@@ -21,21 +21,18 @@
     };
 
     guestModule =
-      { pkgs, options, ... }:
       {
-        nixpkgs.config = {
+        lib,
+        options,
+        ...
+      }:
+      {
+        # With a read-only package set, as in a test that sets `node.pkgs`, the
+        # package set is already the one the guest is meant to have, and
+        # NixOS rejects any other definition of the config.
+        nixpkgs.config = lib.mkIf (!options.nixpkgs.pkgs.isDefined) {
           cudaSupport = true;
           allowUnfree = true;
-        };
-
-        systemd.services.cuda-check = {
-          wantedBy = [ "multi-user.target" ];
-          path = [ pkgs.cudaPackages.saxpy ];
-          script = "saxpy 2>&1";
-          serviceConfig = {
-            Type = "oneshot";
-            RemainAfterExit = true;
-          };
         };
 
         virtualisation.systemd-nspawn.options = [

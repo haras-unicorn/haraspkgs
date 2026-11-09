@@ -51,8 +51,10 @@ overlay:
 
 ## CUDA
 
-Set `self.nixpkgs.config.cudaSupport = true`. The nixpkgs module then applies
-the `nixos-test-driver` GPU patch used by container tests.
+Set `self.nixpkgs.config.cudaSupport = true`. The package set then carries the
+`nixos-test-driver` GPU patch used by container tests. The patch is part of the
+overlays of every package set and decides for itself by reading `cudaSupport`
+from the final package set.
 
 ## Related
 

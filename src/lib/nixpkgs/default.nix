@@ -2,20 +2,22 @@
 
 {
   self.lib.nixpkgs = {
-    makeExtraOverlays =
-      {
-        cudaSupport ? false,
-        ...
-      }:
-      lib.optionals cudaSupport [
-        (final: prev: {
-          nixos-test-driver = prev.nixos-test-driver.overrideAttrs (
-            final: prev: {
-              patches = (prev.patches or [ ]) ++ [ ./nixos-test-driver-gpu.patch ];
-            }
-          );
-        })
-      ];
+    extraOverlays = [
+      (final: prev: {
+        # NOTE: the condition has to be in the value and not around the
+        # attribute, because `final.config` is only available once the names of
+        # the overlays are known.
+        nixos-test-driver =
+          if final.config.cudaSupport or false then
+            prev.nixos-test-driver.overrideAttrs (
+              final: prev: {
+                patches = (prev.patches or [ ]) ++ [ ./nixos-test-driver-gpu.patch ];
+              }
+            )
+          else
+            prev.nixos-test-driver;
+      })
+    ];
 
     makeConfig =
       {
