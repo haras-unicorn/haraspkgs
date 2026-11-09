@@ -62,9 +62,24 @@ image archives when the daemon starts; `withPodman` turns it into the
 
 ## What the daemon is
 
-Both helpers start the daemon only when `NIX_BUILD_TOP` and `NIX_LOG_FD` are
+When `CONTAINER_HOST` or `DOCKER_HOST` is already set, a daemon is running: one
+the setup hook of `withPodman` started, or yours outside a build. Both helpers
+then start nothing and only load the images listed in `PODMAN_SANDBOX_IMAGES`
+into it.
+
+Otherwise they start the daemon only when `NIX_BUILD_TOP` and `NIX_LOG_FD` are
 set, which is the case in a Nix build and not in `nix develop`. Outside a build
-they do nothing.
+they start nothing and only load the images, into the daemon the machine has.
+
+Images are loaded with `podman --remote --url "$CONTAINER_HOST" load` when
+`CONTAINER_HOST` is set. Otherwise they use `docker load` if a Docker API socket
+answers (`DOCKER_HOST`, or `/var/run/docker.sock` as on NixOS with
+`virtualisation.podman.dockerSocket.enable`), because podman serves that API
+too. As a last resort they use `podman --remote load` with its default
+connection. A machine with no daemon at all fails when images are listed.
+
+Stopping does nothing when the daemon process is gone, so a script that started
+nothing stops nothing.
 
 In a build they require root, which a derivation gets from `uid-range`, and stop
 with a message naming the feature otherwise. Then they:

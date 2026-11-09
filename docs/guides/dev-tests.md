@@ -46,6 +46,28 @@ self.devTests.example = {
 
 A declared shell module can be reused with `config.self.devShells.<name>.value`.
 
+## Test a shell that runs containers
+
+A test whose commands need a podman daemon, such as a shell with a
+`check.checks.<name>.podman` check that the test runs through `dev check`, sets
+`podman.enable`:
+
+```nix
+self.devTests.check-podman = {
+  flake = true;
+
+  value = {
+    podman.enable = true;
+    modules = [ self.lib.devModules.example ];
+    commands = [ "dev check" ];
+  };
+};
+```
+
+This only makes the build require the `uid-range` system feature. The daemon is
+started by the command that needs it, which `dev check` does for checks with
+`podman.enable`.
+
 ## Keep a test out of checks
 
 Leave `flake` at its default `false` to keep the test in

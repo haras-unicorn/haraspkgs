@@ -54,6 +54,7 @@
               final.iproute2
               final.nftables
               final.podman
+              final.docker-client
               final.util-linux
             ]
             ++ final.lib.optional cuda toolkit;
@@ -97,6 +98,7 @@
                 export PODMAN_SANDBOX_START_TIMEOUT
                 source ${defaultSandbox.file}
                 postHooks+=(startPodmanSandbox)
+                failureHooks+=(dumpPodmanSandboxLog)
               ''
             );
       in

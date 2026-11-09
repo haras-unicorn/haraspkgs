@@ -162,10 +162,20 @@ The overlay is exported through `flake.overlays.shell`. Because it is
 
 ## Dev shell helpers
 
-The `dev` overlay adds `evaluateDevShellAttrs` and `makeDevTest` under the
-namespace. `evaluateDevShellAttrs` turns dev shell modules into `mkShell`
-derivations. `makeDevTest` wraps that evaluator into a test derivation; it is
-used by the declarative [`self.devTests`](dev-tests.md) API.
+The `dev` overlay depends on the `podman` overlay and adds
+`evaluateDevShellAttrs`, `makeDevTest`, `makeCheck` and `makeCheckCommands`
+under the namespace.
+
+- `evaluateDevShellAttrs` turns dev shell modules into `mkShell` derivations.
+- `makeDevTest` wraps that evaluator into a test derivation; it is used by the
+  declarative [`self.devTests`](dev-tests.md) API. With `podman.enable` set in
+  the test it adds the `uid-range` system feature.
+- `makeCheck` builds the derivation of one [check](dev/check.md) from its name,
+  source, packages and options. With `podman.enable` set it wraps the derivation
+  with [`withPodman`](podman.md) and passes `podman.images` as `podmanImages`.
+- `makeCheckCommands` turns the checks of a shell into the commands of
+  `dev check`. If any check enables `podman`, it runs them through
+  [`makePodmanScript`](podman.md) with the images of every check.
 
 ## Mustache helpers
 

@@ -16,4 +16,39 @@
       ];
     };
   };
+
+  self.devTests.check-podman = {
+    flake = true;
+    value = {
+      podman.enable = true;
+      modules = [
+        ({ pkgs, ... }: {
+          check.checks.example = {
+            podman = {
+              enable = true;
+              images = [
+                (pkgs.dockerTools.buildImage {
+                  name = "container-probe";
+                  tag = "latest";
+                  copyToRoot = [ pkgs.busybox ];
+                  config.Cmd = [
+                    "/bin/echo"
+                    "hello from the container"
+                  ];
+                })
+              ];
+            };
+            commands = ''
+              image=localhost/container-probe:latest
+              podman --remote run --rm "$image" > check.txt
+            '';
+          };
+        })
+      ];
+      commands = [
+        "dev check"
+        "grep -qx 'hello from the container' check.txt"
+      ];
+    };
+  };
 }

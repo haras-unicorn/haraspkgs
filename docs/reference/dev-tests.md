@@ -32,12 +32,13 @@ test options.
 
 <!-- markdownlint-disable MD013 -->
 
-| Option                     | Type                     | Default | Description                                       |
-| -------------------------- | ------------------------ | ------- | ------------------------------------------------- |
-| `devTests.<name>.modules`  | list of deferred modules | `[]`    | Modules used to build the test shell.             |
-| `devTests.<name>.commands` | commands                 | `[]`    | Commands run after the shell hook.                |
-| `devTests.<name>.self`     | bool                     | `true`  | Include the test in `self.lib.<system>.devTests`. |
-| `devTests.<name>.flake`    | bool                     | `false` | Emit the test as a per-system check.              |
+| Option                          | Type                     | Default | Description                                       |
+| ------------------------------- | ------------------------ | ------- | ------------------------------------------------- |
+| `devTests.<name>.modules`       | list of deferred modules | `[]`    | Modules used to build the test shell.             |
+| `devTests.<name>.commands`      | commands                 | `[]`    | Commands run after the shell hook.                |
+| `devTests.<name>.podman.enable` | bool                     | `false` | Whether the test needs containers, see below.     |
+| `devTests.<name>.self`          | bool                     | `true`  | Include the test in `self.lib.<system>.devTests`. |
+| `devTests.<name>.flake`         | bool                     | `false` | Emit the test as a per-system check.              |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -52,6 +53,14 @@ shell's `env`, `nativeBuildInputs`, `inputsFrom`, and packages. It does not
 invoke `nix develop`.
 
 The check fails if the shell hook or any command exits non-zero.
+
+## Containers
+
+`podman.enable = true` adds the `uid-range` system feature to the test
+derivation, so the build can run a podman daemon. It does not start the daemon
+itself: the commands that need one do, for example `dev check` when a check in
+the test shell sets `check.checks.<name>.podman.enable`. See the
+[check module](dev/check.md) and [Podman in builds](podman.md).
 
 ## CI and self-only tests
 

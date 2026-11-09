@@ -183,13 +183,19 @@ Common Nix library and packages I use across my repositories.
   exposes `makePodmanScript` (a `writeShellApplication` wrapper) and
   `withPodman` (a derivation wrapper that adds a setup hook through
   `nativeBuildInputs`). Both start a rootful podman daemon only when
-  `NIX_BUILD_TOP` and `NIX_LOG_FD` are set, so outside a Nix build they do
-  nothing and the wrapped command fails on its own without docker or podman.
+  `NIX_BUILD_TOP` and `NIX_LOG_FD` are set. Outside a Nix build they start
+  nothing, and the wrapped command fails on its own without docker or podman.
   Builds need `requiredSystemFeatures = [ "uid-range" ]`, which in turn needs
   `auto-allocate-uids`; `withPodman` sets the feature and `makePodmanScript`
   fails with a message naming it when it runs as a non-root user inside a build.
   CUDA is on by default when `pkgs.config.cudaSupport` is set and generates the
-  CDI spec inside the build.
+  CDI spec inside the build. When `CONTAINER_HOST` or `DOCKER_HOST` is already
+  set, or outside a build, both helpers start nothing and only load the images
+  into the daemon the machine has (`podman --remote` for `CONTAINER_HOST`, else
+  `docker load`, which podman's Docker socket also answers). Dev shells opt in
+  per check with `check.checks.<name>.podman.{enable,images}` (the `dev`
+  overlay's `makeCheck` and `makeCheckCommands`) and per dev test with
+  `devTests.<name>.podman.enable`, which only adds `uid-range`.
 - **GitHub runners always get KVM and unprivileged user namespaces.** The
   `workflows` module renders two runner steps (`Enable KVM` and
   `Allow unprivileged user namespaces`) right after the Cachix step of every

@@ -30,6 +30,33 @@ in the same derivation, in order.
 `check.packages` adds packages to every check in the shell. Put packages that
 only one check needs in that check's `packages`.
 
+## Run containers in a check
+
+Set `podman.enable` on a check that needs containers, and list the images it
+uses in `podman.images`:
+
+```nix
+check.checks.integration = {
+  podman = {
+    enable = true;
+    images = [ pkgs.harasPackages.image-postgresql-18 ];
+  };
+  packages = [ pkgs.python3 ];
+  commands = "python tests/integration.py";
+};
+```
+
+The check derivation then starts a podman daemon in the build sandbox, loads the
+images, and has `podman` on its `PATH`. Builds that run containers need the
+`uid-range` system feature, which the check asks for itself; see
+[Run containers in checks](../podman.md) for preparing the machine.
+
+`dev check` runs the same commands in your checkout, where there is no sandbox
+to start a daemon in. They use the daemon you already have, and the images are
+loaded into it first: with `podman` when `CONTAINER_HOST` is set, otherwise with
+`docker load` through the Docker API socket (`DOCKER_HOST` or
+`/var/run/docker.sock`, which podman serves too).
+
 ## Repository source
 
 Dev modules get the flake `self`, `inputs`, and `specialArgs` as module
