@@ -1,6 +1,23 @@
 # Podman in builds
 
-The `podman` overlay adds two helpers under the namespace.
+The `podman` overlay adds three helpers under the namespace.
+
+## `makePodmanImage`
+
+```nix
+pkgs.harasPackages.makePodmanImage {
+  imageName = "postgres";
+  imageDigest = "sha256:...";
+  hash = "sha256-...";
+}
+```
+
+Takes the arguments of `dockerTools.pullImage` and returns the image archive
+with the setuid and setgid bits of every file cleared. The Nix build sandbox
+filters `chmod` calls that set those bits, so the daemon fails to unpack layers
+that have them. Layer digests and the image configuration are rewritten to
+match; the image name and tags stay the same. Pass the result to `images` or
+`podmanImages`.
 
 ## `makePodmanScript`
 
@@ -22,6 +39,7 @@ pkgs.harasPackages.makePodmanScript {
 | `runtimeInputs` | list of package | `[]`                      | Extra commands on the script's `PATH`.           |
 | `startTimeout`  | integer         | `10`                      | Seconds to wait for the daemon socket to appear. |
 | `cuda`          | bool            | `pkgs.config.cudaSupport` | Generate a CDI spec for the GPU, see below.      |
+| `images`        | list of package | `[]`                      | Image archives loaded when the daemon starts.    |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -37,7 +55,10 @@ pkgs.harasPackages.withPodman derivation
 Returns the derivation with a setup hook in `nativeBuildInputs` and `uid-range`
 merged into `requiredSystemFeatures`. The hook starts the daemon after the setup
 of the build and the daemon ends with the build. Set the environment variable
-`PODMAN_SANDBOX_START_TIMEOUT` on the derivation to change the wait.
+`PODMAN_SANDBOX_START_TIMEOUT` on the derivation to change the wait. Set the
+list attribute `podmanImages` on the derivation, before wrapping it, to load
+image archives when the daemon starts; `withPodman` turns it into the
+`PODMAN_SANDBOX_IMAGES` variable.
 
 ## What the daemon is
 
@@ -61,7 +82,8 @@ with a message naming the feature otherwise. Then they:
    required mounts such as the GPU ones create it;
 5. bring up the loopback interface and enable IPv4 forwarding;
 6. start `podman system service` with its own `HOME` and configuration;
-7. export the variables below.
+7. export the variables below;
+8. load the image archives listed in `PODMAN_SANDBOX_IMAGES`, if any.
 
 <!-- markdownlint-disable MD013 -->
 

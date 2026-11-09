@@ -19,68 +19,6 @@
         ];
       };
 
-      postgresId = "999";
-
-      passwd = pkgs.writeTextDir "etc/passwd" ''
-        root:x:0:0:root:/root:/bin/sh
-        postgres:x:${postgresId}:${postgresId}:postgres:/data:/bin/sh
-      '';
-
-      group = pkgs.writeTextDir "etc/group" ''
-        root:x:0:
-        postgres:x:${postgresId}:
-      '';
-
-      postgresServer = pkgs.writeShellApplication {
-        name = "postgres-server";
-        runtimeInputs = [
-          pkgs.coreutils
-          pkgs.postgresql
-        ];
-        text = ''
-          initdb --pgdata /data --username postgres --auth trust \
-            --no-locale --encoding UTF8
-          # Published ports reach the container from the address of the
-          # bridge, which the entries initdb writes do not allow.
-          echo "host all all all trust" >> /data/pg_hba.conf
-          exec postgres -D /data \
-            -c listen_addresses='*' \
-            -c unix_socket_directories=/tmp
-        '';
-      };
-
-      postgresEntrypoint = pkgs.writeShellApplication {
-        name = "postgres-entrypoint";
-        runtimeInputs = [
-          pkgs.coreutils
-          pkgs.util-linux
-        ];
-        text = ''
-          mkdir /data
-          chown ${postgresId}:${postgresId} /data
-          exec setpriv --reuid=${postgresId} --regid=${postgresId} \
-            --clear-groups ${lib.getExe postgresServer}
-        '';
-      };
-
-      postgresImage = pkgs.dockerTools.buildImage {
-        name = "postgres-probe";
-        tag = "latest";
-        copyToRoot = [
-          pkgs.dockerTools.binSh
-          passwd
-          group
-          postgresEntrypoint
-        ];
-        extraCommands = "mkdir -m 1777 tmp";
-        # Postgres treats SIGTERM as a smart shutdown that waits for every
-        # client to disconnect, and SIGINT as a fast shutdown.
-        config = {
-          Cmd = [ (lib.getExe postgresEntrypoint) ];
-          StopSignal = "SIGINT";
-        };
-      };
-
       python = pkgs.python3.withPackages (packages: [
         packages.pg8000
         packages.testcontainers
@@ -89,34 +27,45 @@
       # The client connects to 127.0.0.1 and not to the name the library
       # reports, because the sandbox has no /etc/hosts to resolve localhost
       # with. Two containers run at once on the same container port, which is
-      # what host networking could not do.
+      # what host networking could not do. The first "ready" in the log is the
+      # temporary server of the image entrypoint, so the client retries.
       postgresScript = pkgs.writeText "postgres-probe.py" ''
-        import subprocess
-        import sys
+        import time
 
+        import pg8000.exceptions
         import pg8000.native
         from testcontainers.core.container import DockerContainer
         from testcontainers.core.wait_strategies import LogMessageWaitStrategy
 
-        subprocess.run(["podman", "--remote", "load", "--input", sys.argv[1]], check=True)
-
 
         def postgres():
-            container = DockerContainer("localhost/postgres-probe:latest")
+            container = DockerContainer("postgres:18")
             container.with_exposed_ports(5432)
+            container.with_env("POSTGRES_PASSWORD", "secret")
             container.waiting_for(
                 LogMessageWaitStrategy("database system is ready to accept connections")
             )
             return container
 
 
+        def connect(container):
+            deadline = time.monotonic() + 30
+            while True:
+                try:
+                    return pg8000.native.Connection(
+                        user="postgres",
+                        password="secret",
+                        host="127.0.0.1",
+                        port=int(container.get_exposed_port(5432)),
+                    )
+                except pg8000.exceptions.InterfaceError:
+                    if time.monotonic() > deadline:
+                        raise
+                    time.sleep(0.2)
+
+
         def query(container):
-            connection = pg8000.native.Connection(
-                user="postgres",
-                host="127.0.0.1",
-                port=int(container.get_exposed_port(5432)),
-                database="postgres",
-            )
+            connection = connect(container)
             connection.run("create table probe (id integer primary key, name text)")
             connection.run("insert into probe values (1, 'hello'), (2, 'world')")
             rows = connection.run("select id, name from probe order by id")
@@ -135,10 +84,9 @@
 
       containersProbe = pkgs.harasPackages.makePodmanScript {
         name = "containers-probe";
+        images = [ probeImage ];
         text = ''
           image=localhost/container-probe:latest
-
-          podman --remote load --input ${probeImage} > /dev/null
 
           driver="$(podman --remote info --format '{{.Store.GraphDriverName}}')"
           test "$driver" = overlay
@@ -192,9 +140,10 @@
           pkgs.runCommand "haraspkgs-podman-hook-check"
             {
               nativeBuildInputs = [ python ];
+              podmanImages = [ pkgs.harasPackages.image-postgresql-18 ];
             }
             ''
-              python ${postgresScript} ${postgresImage}
+              python ${postgresScript}
               touch "$out"
             ''
         );

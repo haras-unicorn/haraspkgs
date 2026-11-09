@@ -70,6 +70,19 @@
             inherit inputs file;
           };
 
+        # The Nix build sandbox filters chmod calls that set setuid or setgid
+        # bits, which makes the daemon fail to unpack the layers of images that
+        # have such files (most images built on a distribution). The bits do
+        # not matter in a test, so they are cleared and the layer and config
+        # digests rewritten to match.
+        stripSetuid =
+          image:
+          final.runCommand image.name { nativeBuildInputs = [ final.python3 ]; } ''
+            python3 -I ${./strip-setuid.py} ${image} "$out"
+          '';
+
+        toImageList = images: final.lib.concatMapStringsSep " " builtins.toString images;
+
         defaultSandbox = makeSandbox { cuda = defaultCuda; };
 
         hook =
@@ -88,6 +101,8 @@
             );
       in
       {
+        makePodmanImage = args: stripSetuid (final.dockerTools.pullImage args);
+
         makePodmanScript =
           {
             name,
@@ -95,6 +110,7 @@
             runtimeInputs ? [ ],
             startTimeout ? defaultStartTimeout,
             cuda ? defaultCuda,
+            images ? [ ],
           }:
           let
             sandbox = makeSandbox { inherit cuda; };
@@ -104,6 +120,7 @@
             runtimeInputs = runtimeInputs ++ sandbox.inputs;
             text = ''
               export PODMAN_SANDBOX_START_TIMEOUT=${builtins.toString startTimeout}
+              export PODMAN_SANDBOX_IMAGES=${final.lib.escapeShellArg (toImageList images)}
               # shellcheck source=/dev/null
               source ${sandbox.file}
               startPodmanSandbox
@@ -112,9 +129,12 @@
             '';
           };
 
+        # Images come from the `podmanImages` attribute of the derivation, so
+        # they are build inputs like any other and need no new calling form.
         withPodman =
           derivation:
           derivation.overrideAttrs (old: {
+            PODMAN_SANDBOX_IMAGES = toImageList (old.podmanImages or [ ]);
             nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ hook ];
             requiredSystemFeatures = final.lib.unique ((old.requiredSystemFeatures or [ ]) ++ [ "uid-range" ]);
           });

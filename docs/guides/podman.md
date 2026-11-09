@@ -57,9 +57,57 @@ pkgs.harasPackages.withPodman (
 
 ## Provide images
 
-The sandbox has no network, so nothing can be pulled. Build images with
-`dockerTools` and load them with `podman --remote load --input <image>`. Tags of
-images built that way are `localhost/<name>:<tag>`.
+The sandbox has no network, so nothing can be pulled. Fetch or build images
+outside the sandbox and list them, and the daemon loads them when it starts.
+Images built with `dockerTools.buildImage` are tagged `localhost/<name>:<tag>`.
+
+To use an image from a registry, fetch it with `makePodmanImage`. It takes the
+arguments of `dockerTools.pullImage` and clears the setuid and setgid bits,
+which the Nix build sandbox does not let the daemon create. Most images built on
+a distribution have such files, and without this they fail to load.
+
+```nix
+pkgs.harasPackages.makePodmanImage {
+  imageName = "postgres";
+  imageDigest = "sha256:...";
+  hash = "sha256-...";
+  finalImageName = "docker.io/library/postgres";
+  finalImageTag = "18";
+}
+```
+
+The haraspkgs flake exports a few of these as `image-*` packages, for example
+`pkgs.harasPackages.image-postgresql-18`, which testcontainers modules find as
+`postgres:18`.
+
+For a script, pass `images`:
+
+```nix
+pkgs.harasPackages.makePodmanScript {
+  name = "probe";
+  images = [ pkgs.harasPackages.image-postgresql-18 ];
+  text = "podman --remote run --rm postgres:18 postgres --version";
+}
+```
+
+For a derivation, set `podmanImages` on it before wrapping it with `withPodman`:
+
+```nix
+pkgs.harasPackages.withPodman (
+  pkgs.runCommand "containers-check"
+    {
+      nativeBuildInputs = [ pkgs.python3 ];
+      podmanImages = [ pkgs.harasPackages.image-postgresql-18 ];
+    }
+    ''
+      python ${client}
+      touch "$out"
+    ''
+)
+```
+
+The images are ordinary build inputs, so they are built first and cached like
+any other derivation.
 
 ## Use a Docker client library
 
