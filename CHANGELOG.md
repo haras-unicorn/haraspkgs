@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.3.0...v1.4.0) (2026-11-09)
+
+
+### Features
+
+* containers in nix sandbox ([#25](https://github.com/haras-unicorn/haraspkgs/issues/25)) ([d281fa4](https://github.com/haras-unicorn/haraspkgs/commit/d281fa48e6361fce6461e824795874b57928d1c2))
+
+
+### Bug Fixes
+
+* cuda in containers checks and tests ([#27](https://github.com/haras-unicorn/haraspkgs/issues/27)) ([b792314](https://github.com/haras-unicorn/haraspkgs/commit/b7923142cc0e9a1fb4abf9681fb3a7f3674cbf09))
+* direnv proper flake rebuild ([#28](https://github.com/haras-unicorn/haraspkgs/issues/28)) ([cefe517](https://github.com/haras-unicorn/haraspkgs/commit/cefe51736d917103110f1ad6eb7308af336a0093))
+
 ## [1.3.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.2.1...v1.3.0) (2026-11-04)
 
 
