@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.4.0...v1.5.0) (2026-11-09)
+
+
+### Features
+
+* db containers ([#31](https://github.com/haras-unicorn/haraspkgs/issues/31)) ([d861818](https://github.com/haras-unicorn/haraspkgs/commit/d861818b344d536559b9731792ea61f071a17d93))
+* mustache substitution ([#33](https://github.com/haras-unicorn/haraspkgs/issues/33)) ([21a1e47](https://github.com/haras-unicorn/haraspkgs/commit/21a1e4791db59dfddcb2c2b9f125917988e06847))
+
 ## [1.4.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.3.0...v1.4.0) (2026-11-09)
 
 
