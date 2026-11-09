@@ -130,12 +130,14 @@ Common Nix library and packages I use across my repositories.
   `direnv.watch.dirs`, which default to the directories in `makeFlake`'s
   `modules` (this repository: `src` and `tests`), read from the `modulePaths`
   special argument and made relative to `self.outPath`. nix-direnv rebuilds its
-  cached shell when any watched file is newer, and the rebuilt shell's hook
-  syncs the generated files. The watches go after `use flake`: direnv records
-  their times in whole seconds when they are registered, and the hook can modify
-  watched directories, so watches registered earlier make every load trigger
-  another reload. Commit `.envrc`; direnv needs `direnv allow` after the hook
-  rewrites it.
+  cached shell when a path registered earlier in the same `.envrc` run is newer
+  than the cache, because direnv clears the previous watches before evaluating
+  `.envrc`. The watch lines therefore appear twice, before and after
+  `use flake`: the first set lets nix-direnv see them, and the second replaces
+  the recorded times, which direnv keeps in whole seconds and the hook can
+  disturb by modifying watched directories, so with only the first set every
+  load would trigger another reload. Commit `.envrc`; direnv needs
+  `direnv allow` after the hook rewrites it.
 - **The shared `dev` CLI lives in `src/dev/cli.nix`.** Repo-specific subcommands
   are `cli.commands` entries; `check` and `format` register their subcommands
   automatically. Do not add a second `dev` package outside the CLI module.

@@ -3,6 +3,7 @@
 {
   self.devShells.default = {
     flake = true;
+
     value =
       {
         config,

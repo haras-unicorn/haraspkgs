@@ -14,9 +14,20 @@ is newer than the cache. A stale shell stays stale.
 ## Watching directories
 
 `watch_dir` adds a directory recursively, so a changed, added or removed file
-inside reloads the shell on the next prompt, and nix-direnv sees those files as
-newer than its cache and rebuilds it. The module turns `direnv.watch.dirs` into
-`watch_dir` lines.
+inside reloads the shell on the next prompt. The module turns
+`direnv.watch.dirs` into `watch_dir` lines. That alone is not enough, as the
+next sections explain.
+
+## Why the watches appear twice
+
+nix-direnv decides whether to rebuild its cache while `use flake` runs, by
+looking at the watches registered so far in that run. direnv clears the watches
+of the previous load before it evaluates `.envrc`, so a `watch_dir` written only
+after `use flake` makes direnv reload but is invisible to nix-direnv, which then
+reuses the stale cache. The module therefore registers the watches before
+`use flake` as well. An edited file is newer than the cache, and an added or
+removed file changes the modification time of its directory, so the shell is
+rebuilt in all three cases.
 
 ## Where the paths come from
 
@@ -29,15 +40,17 @@ needs, and ignores anything outside the repository. Watching the whole
 repository instead would reload on every source edit, which is why the default
 is the module tree and not `.`.
 
-## Why the watches come after `use flake`
+## Why the watches are registered again after `use flake`
 
 direnv records the modification time of every watched path, in whole seconds,
 the moment the watch is registered, and reloads when a later check finds a
-different time. The shell hook runs inside `use flake`, and anything it runs can
-modify a watched directory: a wrapped formatter may stage files in the checkout,
-for example. If the watches were registered first, that change would land after
+different time. Registering a path again replaces its recorded time.
+
+The shell hook runs inside `use flake`, and anything it runs can modify a
+watched directory: a wrapped formatter may stage files in the checkout, for
+example. If the watches were only registered first, that change would land after
 the recorded time and the next prompt would reload, run the hook again, and
-change the directory again, on every prompt. Registering the watches after
+change the directory again, on every prompt. Registering the watches again after
 `use flake` records the state the hook leaves behind, so only later edits count.
 
 ## How it fits with the file module

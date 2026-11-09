@@ -22,12 +22,13 @@ in the default group. It writes `.envrc` through the `file` module.
 `.envrc` is written by `file.".envrc"` with `format = false`, in this order:
 
 1. the `extra` lines,
-2. `use flake <useFlake>`,
-3. one `watch_file <path>` per entry of `watch.files`,
-4. one `watch_dir <path>` per entry of `watch.dirs`.
+2. one `watch_file <path>` per entry of `watch.files`, then one
+   `watch_dir <path>` per entry of `watch.dirs`,
+3. `use flake <useFlake>`,
+4. the same watch lines again.
 
-All paths are relative to the repository root. The watches come last on purpose;
-see [why direnv watches the Nix tree](../../explanation/dev/direnv.md).
+All paths are relative to the repository root. The watches appear twice on
+purpose; see [why direnv watches the Nix tree](../../explanation/dev/direnv.md).
 
 ## Defaults
 
