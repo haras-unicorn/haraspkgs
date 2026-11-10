@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/haras-unicorn/haraspkgs/compare/v1.5.1...v1.5.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* checks ([#37](https://github.com/haras-unicorn/haraspkgs/issues/37)) ([61fb169](https://github.com/haras-unicorn/haraspkgs/commit/61fb169912f0141343485a4a3cc811c1ece70aad))
+
 ## [1.5.1](https://github.com/haras-unicorn/haraspkgs/compare/v1.5.0...v1.5.1) (2026-11-10)
 
 
