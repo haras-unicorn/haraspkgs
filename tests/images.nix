@@ -13,6 +13,7 @@
           pkgs.runCommand "haraspkgs-${name}-check"
             {
               nativeBuildInputs = [ pkgs.gnutar ];
+              PODMAN_SANDBOX_TRACE = "1";
               podmanImages = [ image ];
             }
             ''

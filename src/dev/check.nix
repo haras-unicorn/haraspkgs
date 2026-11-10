@@ -17,21 +17,6 @@
       }:
       let
         checks = lib.filterAttrs (_: check: check.enable) config.check.checks;
-
-        mkCheck =
-          name: check:
-          pkgs.runCommand "check-${name}"
-            {
-              src = self.outPath;
-              nativeBuildInputs = config.check.packages ++ check.packages;
-            }
-            ''
-              cp -r $src source
-              chmod -R u+w source
-              cd source
-              ${selfLib.dev.concatCommands check.commands}
-              touch $out
-            '';
       in
       {
         options.check = {
@@ -51,6 +36,20 @@
                       type = lib.types.bool;
                       default = true;
                       description = "Whether to expose the check at `${name}`.";
+                    };
+
+                    podman = {
+                      enable = lib.mkOption {
+                        type = lib.types.bool;
+                        default = false;
+                        description = "Whether to give the check at `${name}` container support.";
+                      };
+
+                      images = lib.mkOption {
+                        type = lib.types.listOf lib.types.package;
+                        default = [ ];
+                        description = "Images to expose in the check at `${name}`.";
+                      };
                     };
 
                     packages = lib.mkOption {
@@ -75,7 +74,14 @@
 
         config = lib.mkMerge [
           {
-            passthru.checks = builtins.mapAttrs mkCheck checks;
+            passthru.checks = builtins.mapAttrs (
+              name: check:
+              (pkgs.extend selfLib.overlays.overlays.dev).${selfLib.overlays.namespace}.makeCheck {
+                inherit name check;
+                source = self.outPath;
+                packages = config.check.packages ++ check.packages;
+              }
+            ) checks;
           }
           (lib.mkIf (checks != { }) {
             cli.commands.check = {
@@ -83,10 +89,11 @@
               packages =
                 config.check.packages
                 ++ lib.flatten (builtins.map (check: check.packages) (builtins.attrValues checks));
-              commands = builtins.map (name: {
-                header = "check ${name}";
-                text = selfLib.dev.concatCommands checks.${name}.commands;
-              }) (builtins.filter (name: checks.${name}.commands != [ ]) (builtins.attrNames checks));
+              commands =
+                (pkgs.extend selfLib.overlays.overlays.dev).${selfLib.overlays.namespace}.makeCheckCommands
+                  {
+                    inherit checks;
+                  };
             };
           })
         ];

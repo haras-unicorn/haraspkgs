@@ -1,5 +1,14 @@
 startPodmanSandbox() {
-  if [ -z "${NIX_BUILD_TOP:-}" ] || [ -z "${NIX_LOG_FD:-}" ]; then
+  if [ -n "${PODMAN_SANDBOX_TRACE:-}" ]; then
+    set -x
+  fi
+
+  # A daemon is already there when a variable is set, because the commands of
+  # `dev check` are inlined into one shell and the second would otherwise start
+  # another daemon that inherits the first one's CONTAINER_HOST.
+  if [ -n "${CONTAINER_HOST:-}" ] || [ -n "${DOCKER_HOST:-}" ] ||
+    [ -z "${NIX_BUILD_TOP:-}" ] || [ -z "${NIX_LOG_FD:-}" ]; then
+    loadPodmanSandboxImages
     return 0
   fi
 
@@ -11,16 +20,18 @@ startPodmanSandbox() {
   local state socket
   state="$(mktemp -d "$NIX_BUILD_TOP/podman-sandbox.XXXXXX")"
   socket="$state/podman.sock"
+  podmanSandboxLog="$state/service.log"
 
   mkdir -p \
     "$state/home/.config/containers" "$state/run" "$state/networks" \
     "$state/cdi"
   ln -s @policy@ "$state/home/.config/containers/policy.json"
-  sed "s|__STATE__|$state|g" @storageConf@ > "$state/storage.conf"
-  sed "s|__STATE__|$state|g" @containersConf@ > "$state/containers.conf"
+  sed "s|__STATE__|$state|g" @storageConf@ >"$state/storage.conf"
+  sed "s|__STATE__|$state|g" @containersConf@ >"$state/containers.conf"
 
   # The spec of the host is not used, because its hooks are store paths that
   # a build does not have. This one is made from the driver the build got.
+  # shellcheck disable=SC2157
   if [ -n "@cdiHook@" ] && [ -e /dev/nvidiactl ]; then
     nvidia-ctk cdi generate \
       --format json \
@@ -42,7 +53,7 @@ startPodmanSandbox() {
   # and crun fails with "invalid file system type".
   mount -t cgroup2 none /sys/fs/cgroup
   ip link set lo up
-  echo 1 > /proc/sys/net/ipv4/ip_forward
+  echo 1 >/proc/sys/net/ipv4/ip_forward
 
   env \
     HOME="$state/home" \
@@ -51,11 +62,11 @@ startPodmanSandbox() {
     CONTAINERS_STORAGE_CONF="$state/storage.conf" \
     NETAVARK_FW=nftables \
     podman system service --time 0 "unix://$socket" \
-    > "$state/service.log" 2>&1 &
+    >"$state/service.log" 2>&1 &
   podmanSandboxPid=$!
 
-  if ! timeout "$PODMAN_SANDBOX_START_TIMEOUT" \
-    sh -c 'until [ -S "$1" ]; do sleep 0.1; done' _ "$socket"; then
+  # shellcheck disable=SC2016
+  if ! timeout "$PODMAN_SANDBOX_START_TIMEOUT" sh -c 'until [ -S "$1" ]; do sleep 0.1; done' _ "$socket"; then
     cat "$state/service.log" >&2
     return 1
   fi
@@ -67,18 +78,47 @@ startPodmanSandbox() {
   export TESTCONTAINERS_RYUK_DISABLED=true
   export TESTCONTAINERS_HOST_OVERRIDE=127.0.0.1
 
-  local image
-  for image in ${PODMAN_SANDBOX_IMAGES:-}; do
-    podman --remote load --input "$image" > /dev/null
-  done
+  loadPodmanSandboxImages
 }
 
 stopPodmanSandbox() {
-  if [ -z "${podmanSandboxPid:-}" ]; then
+  local status=$?
+  if [ "$status" -ne 0 ]; then
+    dumpPodmanSandboxLog
+  fi
+
+  if [ -z "${podmanSandboxPid:-}" ] ||
+    [ ! -d "/proc/${podmanSandboxPid:-}" ]; then
     return 0
   fi
 
-  podman --remote rm --all --force > /dev/null 2>&1 || true
+  podman --remote rm --all --force >/dev/null 2>&1 || true
   kill "$podmanSandboxPid" || true
   wait "$podmanSandboxPid" || true
+}
+
+dumpPodmanSandboxLog() {
+  if [ -n "${podmanSandboxLog:-}" ] && [ -f "$podmanSandboxLog" ]; then
+    echo '--- podman service log ---' >&2
+    cat "$podmanSandboxLog" >&2
+  fi
+}
+
+loadPodmanSandboxImages() {
+  if [ -z "${PODMAN_SANDBOX_IMAGES:-}" ]; then
+    return 0
+  fi
+
+  local image
+  for image in $PODMAN_SANDBOX_IMAGES; do
+    if [ -n "${CONTAINER_HOST:-}" ]; then
+      podman --remote --url "$CONTAINER_HOST" load --input "$image" >/dev/null
+    elif docker version >/dev/null 2>&1; then
+      # Podman answers the Docker API too, so this also reaches a podman socket
+      # that DOCKER_HOST or /var/run/docker.sock names.
+      docker load --input "$image" >/dev/null
+    else
+      podman --remote load --input "$image" >/dev/null
+    fi
+  done
 }

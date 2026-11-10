@@ -2,8 +2,9 @@
 
 `harasPackages.makePodmanScript` and `harasPackages.withPodman` start a podman
 daemon inside the Nix build sandbox, so a check can run containers. Outside the
-sandbox they do nothing: the wrapped command uses the Docker or podman daemon of
-whoever runs it, and fails by itself if there is none.
+sandbox they start nothing: they load the images you list into the Docker or
+podman daemon of whoever runs them, and the wrapped command fails by itself if
+there is none.
 
 ## Wrap a script
 

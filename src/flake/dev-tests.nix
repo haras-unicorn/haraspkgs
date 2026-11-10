@@ -53,6 +53,14 @@ in
                             description = "Dev modules to test.";
                           };
 
+                          podman = {
+                            enable = lib.mkOption {
+                              type = lib.types.bool;
+                              default = false;
+                              description = "Whether to give the check container support.";
+                            };
+                          };
+
                           commands = lib.mkOption {
                             type = selfLib.dev.commands;
                             default = [ ];
