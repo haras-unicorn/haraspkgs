@@ -189,12 +189,14 @@ Common Nix library and packages I use across my repositories.
   `auto-allocate-uids`; `withPodman` sets the feature and `makePodmanScript`
   fails with a message naming it when it runs as a non-root user inside a build.
   CUDA is on by default when `pkgs.config.cudaSupport` is set and generates the
-  CDI spec inside the build. When `CONTAINER_HOST` or `DOCKER_HOST` is already
-  set, or outside a build, both helpers start nothing and only load the images
-  into the daemon the machine has (`podman --remote` for `CONTAINER_HOST`, else
-  `docker load`, which podman's Docker socket also answers). Dev shells opt in
-  per check with `check.checks.<name>.podman.{enable,images}` (the `dev`
-  overlay's `makeCheck` and `makeCheckCommands`) and per dev test with
+  CDI spec inside the build. Both helpers first ask `podman --remote info`, then
+  `docker version`, whether a daemon answers (each client resolves its own
+  variables, connections and default sockets); when one does, they start nothing
+  and load the images into it with that client. The `withPodman` hook stops its
+  daemon through stdenv's `exitHooks` and `failureHooks`, so Nix never has to
+  kill it as a stray process. Dev shells opt in per check with
+  `check.checks.<name>.podman.{enable,images}` (the `dev` overlay's `makeCheck`
+  and `makeCheckCommands`) and per dev test with
   `devTests.<name>.podman.enable`, which only adds `uid-range`.
 - **GitHub runners always get KVM and unprivileged user namespaces.** The
   `workflows` module renders two runner steps (`Enable KVM` and

@@ -98,7 +98,8 @@
                 export PODMAN_SANDBOX_START_TIMEOUT
                 source ${defaultSandbox.file}
                 postHooks+=(startPodmanSandbox)
-                failureHooks+=(dumpPodmanSandboxLog)
+                exitHooks+=(stopPodmanSandbox)
+                failureHooks+=(dumpPodmanSandboxLog stopPodmanSandbox)
               ''
             );
       in

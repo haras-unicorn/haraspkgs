@@ -3,12 +3,17 @@ startPodmanSandbox() {
     set -x
   fi
 
-  # A daemon is already there when a variable is set, because the commands of
-  # `dev check` are inlined into one shell and the second would otherwise start
-  # another daemon that inherits the first one's CONTAINER_HOST.
-  if [ -n "${CONTAINER_HOST:-}" ] || [ -n "${DOCKER_HOST:-}" ] ||
-    [ -z "${NIX_BUILD_TOP:-}" ] || [ -z "${NIX_LOG_FD:-}" ]; then
+  # Each client finds a daemon its own way (variables, contexts and
+  # connections, default sockets), so asking them covers machines that set
+  # neither CONTAINER_HOST nor DOCKER_HOST. The commands of `dev check` are
+  # inlined into one shell, and this also finds the daemon an earlier one
+  # started.
+  if findPodmanSandboxClient; then
     loadPodmanSandboxImages
+    return 0
+  fi
+
+  if [ -z "${NIX_BUILD_TOP:-}" ] || [ -z "${NIX_LOG_FD:-}" ]; then
     return 0
   fi
 
@@ -78,6 +83,7 @@ startPodmanSandbox() {
   export TESTCONTAINERS_RYUK_DISABLED=true
   export TESTCONTAINERS_HOST_OVERRIDE=127.0.0.1
 
+  podmanSandboxClient=podman
   loadPodmanSandboxImages
 }
 
@@ -104,6 +110,18 @@ dumpPodmanSandboxLog() {
   fi
 }
 
+findPodmanSandboxClient() {
+  if podman --remote info >/dev/null 2>&1; then
+    podmanSandboxClient=podman
+  elif docker version >/dev/null 2>&1; then
+    # Podman answers the Docker API too, so this also reaches a podman socket
+    # that DOCKER_HOST or /var/run/docker.sock names.
+    podmanSandboxClient=docker
+  else
+    return 1
+  fi
+}
+
 loadPodmanSandboxImages() {
   if [ -z "${PODMAN_SANDBOX_IMAGES:-}" ]; then
     return 0
@@ -111,14 +129,10 @@ loadPodmanSandboxImages() {
 
   local image
   for image in $PODMAN_SANDBOX_IMAGES; do
-    if [ -n "${CONTAINER_HOST:-}" ]; then
-      podman --remote --url "$CONTAINER_HOST" load --input "$image" >/dev/null
-    elif docker version >/dev/null 2>&1; then
-      # Podman answers the Docker API too, so this also reaches a podman socket
-      # that DOCKER_HOST or /var/run/docker.sock names.
-      docker load --input "$image" >/dev/null
-    else
+    if [ "$podmanSandboxClient" = podman ]; then
       podman --remote load --input "$image" >/dev/null
+    else
+      docker load --input "$image" >/dev/null
     fi
   done
 }
