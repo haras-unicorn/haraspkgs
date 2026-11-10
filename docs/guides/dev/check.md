@@ -53,9 +53,9 @@ images, and has `podman` on its `PATH`. Builds that run containers need the
 
 `dev check` runs the same commands in your checkout, where there is no sandbox
 to start a daemon in. They use the daemon you already have, and the images are
-loaded into it first: with `podman` when `CONTAINER_HOST` is set, otherwise with
-`docker load` through the Docker API socket (`DOCKER_HOST` or
-`/var/run/docker.sock`, which podman serves too).
+loaded into it first. The daemon is whichever one `podman --remote` or `docker`
+reaches, through their variables, configured connections or default sockets
+(podman serves the Docker API socket too).
 
 ## Repository source
 

@@ -62,21 +62,19 @@ image archives when the daemon starts; `withPodman` turns it into the
 
 ## What the daemon is
 
-When `CONTAINER_HOST` or `DOCKER_HOST` is already set, a daemon is running: one
-the setup hook of `withPodman` started, or yours outside a build. Both helpers
-then start nothing and only load the images listed in `PODMAN_SANDBOX_IMAGES`
-into it.
+Both helpers first ask the clients whether a daemon answers, with
+`podman --remote info` and then `docker version`. Each client finds a daemon its
+own way: `CONTAINER_HOST` or `DOCKER_HOST`, its configured connections or
+contexts, and its default sockets, such as `/var/run/docker.sock` on NixOS with
+`virtualisation.podman.dockerSocket.enable` (podman serves the Docker API too).
+When one answers, the helpers start nothing and load the images listed in
+`PODMAN_SANDBOX_IMAGES` into that daemon with the same client
+(`podman --remote load` or `docker load`). That daemon is yours outside a build,
+or the one an earlier helper started in the same shell.
 
-Otherwise they start the daemon only when `NIX_BUILD_TOP` and `NIX_LOG_FD` are
-set, which is the case in a Nix build and not in `nix develop`. Outside a build
-they start nothing and only load the images, into the daemon the machine has.
-
-Images are loaded with `podman --remote --url "$CONTAINER_HOST" load` when
-`CONTAINER_HOST` is set. Otherwise they use `docker load` if a Docker API socket
-answers (`DOCKER_HOST`, or `/var/run/docker.sock` as on NixOS with
-`virtualisation.podman.dockerSocket.enable`), because podman serves that API
-too. As a last resort they use `podman --remote load` with its default
-connection. A machine with no daemon at all fails when images are listed.
+When none answers, they start the daemon only when `NIX_BUILD_TOP` and
+`NIX_LOG_FD` are set, which is the case in a Nix build and not in `nix develop`.
+Outside a build they start nothing, and the wrapped command fails on its own.
 
 Stopping does nothing when the daemon process is gone, so a script that started
 nothing stops nothing.
