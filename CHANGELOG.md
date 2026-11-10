@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/haras-unicorn/haraspkgs/compare/v1.5.0...v1.5.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* add podman options to shell checks ([#34](https://github.com/haras-unicorn/haraspkgs/issues/34)) ([df55046](https://github.com/haras-unicorn/haraspkgs/commit/df55046b540a89934ef0bc3aed9e5ea35f9e4120))
+
 ## [1.5.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.4.0...v1.5.0) (2026-11-09)
 
 
