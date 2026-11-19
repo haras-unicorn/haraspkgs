@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/haras-unicorn/haraspkgs/compare/v1.5.2...v1.6.0) (2026-11-19)
+
+
+### Features
+
+* **package/learnharness:** init at 0.6.1 ([#44](https://github.com/haras-unicorn/haraspkgs/issues/44)) ([d753d39](https://github.com/haras-unicorn/haraspkgs/commit/d753d39e9ddc68967d2a05517c7b487a8e4293dc))
+
 ## [1.5.2](https://github.com/haras-unicorn/haraspkgs/compare/v1.5.1...v1.5.2) (2026-11-10)
 
 
