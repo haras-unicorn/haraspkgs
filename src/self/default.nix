@@ -284,6 +284,7 @@
             "vitess"
             "gnutar"
             "noheading"
+            "learnharness"
           ];
         };
 
